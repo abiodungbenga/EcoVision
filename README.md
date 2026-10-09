@@ -1,108 +1,136 @@
-# WildSense — Premium V-Modal Environmental Intelligence MVP
+# EcoVision
 
-Search wildlife footage by meaning. Find the moments that matter.
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-%2302569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" />
+  <img src="https://img.shields.io/badge/V-Modal-SDK-6C5CE7?style=for-the-badge" alt="V-Modal SDK" />
+  <img src="https://img.shields.io/badge/AI-Video%20Search-10B981?style=for-the-badge" alt="AI Video Search" />
+</p>
 
-WildSense is a premium proof-of-concept demonstrating how environmental researchers can use the **V-Modal Flutter SDK** to upload wildlife footage, index it, and perform semantic searches to find specific moments using natural language.
+<p align="center">
+  <strong>Search wildlife footage by meaning.</strong><br>
+  Discover the moments that matter in field recordings using semantic search and AI-powered video intelligence.
+</p>
+
+EcoVision is a premium proof-of-concept for environmental researchers and conservation teams. It uses the <a href="https://pub.dev/packages/vmodal_sdk_flutter" target="_blank">vmodal_sdk_flutter</a> SDK to upload wildlife footage, index it, and perform natural-language searches for specific moments in video content.
+
+> EcoVision turns raw field footage into searchable, actionable wildlife intelligence.
 
 <div align="center">
 
 ## 📲 Android App Download
 
 <a href="https://drive.google.com/file/d/1zLxiWbnAvKU0aHRR_UHyRVtONWquO-er/view?usp=sharing" target="_blank">
-  <img src="https://img.shields.io/badge/Android-Download%20APK-34A853?style=for-the-badge&logo=android&logoColor=white" alt="Download WildSense Android APK" width="260" />
+  <img src="https://img.shields.io/badge/Android-Download%20APK-34A853?style=for-the-badge&logo=android&logoColor=white" alt="Download EcoVision Android APK" width="260" />
 </a>
 
-<p>
-  <strong>Latest Android build</strong><br>
-  Install the APK to test the latest Wildlife Intelligence experience on Android.
-</p>
+<strong>Latest Android build</strong><br>
+Install the APK to explore the latest wildlife intelligence experience on Android.
 
 </div>
 
-## Features
+## Why EcoVision
 
-- **Wildlife Library**: View and manage field research footage.
-- **Smart Upload**: Select and upload videos directly to V-Modal.
-- **AI Indexing**: Automatic semantic indexing of video content.
-- **Semantic Search**: Search for moments like "elephants near water" without tags or keywords.
-- **Global Archive Search**: Search across your entire research library in one query.
-- **Research Semantic Chips**: One-tap filters for predation, drinking, human intrusion, and more.
-- **Sightings Discover Feed**: A live aggregate feed of detected moments from all footage.
-- **Observation Bookmarks**: Save and organize important field moments into reports with local persistence.
-- **Visual Reference Search**: Use an image (e.g., a photo of a specific leopard) to find all matching appearances across your footage.
-- **Real-Time AI Thumbnails**: Dynamic resolution of video frame previews for all search and discovery results.
-- **Moment Navigation**: Jump directly to the relevant timestamp in search results.
+- Explore wildlife footage without manual tagging or keyword-heavy review.
+- Search by behavior, event, or visual similarity using natural language.
+- Archive and revisit high-value moments from field research collections.
+- Accelerate conservation monitoring with AI-powered semantic indexing.
+
+## Key Features
+
+- **Wildlife Library** — View and organize field footage from research collections.
+- **Smart Upload** — Upload videos directly into the V-Modal pipeline.
+- **AI Indexing** — Automatically analyze visual and semantic content for searchable moments.
+- **Semantic Search** — Find moments like “elephants near water” without relying on manual labels.
+- **Global Archive Search** — Query across an entire indexed research library in one step.
+- **Semantic Filters** — Jump to common behaviors such as predation, drinking, and human intrusion.
+- **Discovery Feed** — Track the latest AI-detected wildlife activity across all footage.
+- **Saved Observations** — Bookmark important wildlife moments and keep them locally on-device.
+- **Visual Reference Search** — Search using an image to find matching subjects and events.
+- **AI Video Thumbnails** — Generate preview frames for instant context before playback.
+- **Moment Navigation** — Jump directly to relevant timestamps in the source video.
+
+## How It Works
+
+1. **Upload**: Add raw field footage into the app.
+2. **Index**: V-Modal processes the video and creates searchable semantic context.
+3. **Search**: Query using natural language or visual examples to find precise moments.
+4. **Review**: Open the matching timestamp and inspect the result in context.
 
 ## Architecture
 
-WildSense follows a feature-first architecture using **GetX**:
+EcoVision follows a feature-first architecture built with **Flutter** and **GetX**:
 
-- **app/**: Routes, Themes, and Global Bindings.
-- **core/**: Constants, Utilities, and Extensions.
-- **services/**: Isolated V-Modal SDK integration (`VModalService`).
-- **features/**: Functional modules (Home, Upload, Search, Video).
-- **shared/**: Reusable widgets and models.
+- **app/** — Routes, themes, and app-level configuration.
+- **core/** — Shared constants, utilities, and extensions.
+- **services/** — V-Modal SDK integration and backend helpers.
+- **features/** — UI modules for home, upload, search, and video playback.
+- **shared/** — Reusable widgets, models, and common components.
 
 ## Tech Stack
 
-- **Flutter**: UI Framework.
-- **GetX**: State management, routing, and dependency injection.
-- **V-Modal SDK**: Semantic video search and indexing.
-- **Video Player**: Native video playback.
+- **Flutter** — Cross-platform mobile app development
+- **GetX** — State management, routing, and dependency injection
+- **vmodal_sdk_flutter** — Semantic video indexing and search
+- **video_player** — Native video playback experience
+- **localstore** — Local persistence for bookmarks and saved observations
 
-## Visual Reference Search (Image-to-Video)
+## Visual Search Experience
 
-WildSense now supports searching by visual similarity. This is useful for finding specific individuals or environmental patterns that are hard to describe in words.
+EcoVision supports image-to-video search for identifying specific animals or patterns that are difficult to describe in words.
 
-1. Navigate to the **Search** screen.
-2. Tap the **Camera/Photo icon** in the search bar.
-3. Select an image from your gallery.
-4. The search engine will now use the visual features of that image to query your video index.
-5. Results will show every timestamp where a similar subject appears.
+1. Open the **Search** screen.
+2. Tap the **Camera/Photo** icon in the search bar.
+3. Choose an image from your gallery.
+4. The search engine uses that image to find visually similar appearances in your footage.
+5. Review matching timestamps and moments across the archive.
 
-## Global Archive & Semantic Filters
+## Global Archive & Smart Filters
 
-WildSense allows researchers to discover patterns across many videos at once.
+Researchers can uncover patterns across large media libraries without manually reviewing every clip.
 
-1.  **Global Archive Toggle**: In the **Search** screen, flip the "Global Archive" switch to query your entire indexed library instead of just the currently selected video.
-2.  **Semantic Chips**: Use the quick-tap filters like `🐾 Predation` or `💧 Drinking` to instantly trigger AI searches for common wildlife behaviors.
-3.  **Discovery Feed**: Check the **Home** screen for a live "Discovery Feed" of recently indexed wildlife activity from all your footage.
-4.  **Bookmarks**: Tap the bookmark icon on any search result to save it to your **Saved Observations**. These are persisted locally and will be available even after restarting the app.
+1. Toggle **Global Archive** to search across the full indexed library.
+2. Use semantic chips such as `🐾 Predation` or `💧 Drinking` for fast discovery.
+3. Explore the **Discovery Feed** for recent AI-detected wildlife activity.
+4. Save significant moments to **Saved Observations** for later reporting.
 
 ## Data Persistence & Visual Previews
 
-WildSense is designed for long-term field research with robust data handling:
+EcoVision is designed for long-term field research with resilient storage and user-friendly review workflows.
 
-- **Local Persistence**: Uses `localstore` to save your "Saved Observations" JSON database directly on your device. Your research work is never lost when the app closes.
-- **Dynamic AI Thumbnails**: Every search result and discovery moment automatically fetches its corresponding video frame from V-Modal. This provides immediate visual context before you even press play.
-- **Interactive Feed**: The Discovery Feed on the Home screen is fully interactive. Tap any moment to play it instantly or receive guidance on which archived video contains that sighting.
+- **Local Persistence** — Save observations locally with `localstore` so research work is retained between sessions.
+- **Dynamic AI Thumbnails** — Fetch contextual frames from V-Modal for every result and feed item.
+- **Interactive Feed** — Explore moments directly from the home dashboard and jump to the relevant video segment.
 
 ## Setup
 
-1. **V-Modal API Key**:
-   Obtain an API key from V-Modal and configure it via dart-define:
+1. **V-Modal API Key**
+
+   Obtain an API key from V-Modal and configure it with `dart-define`:
 
    ```bash
    flutter run --dart-define=VMODAL_API_KEY=your_api_key --dart-define=VMODAL_PROJECT_ID=your_project_id
    ```
 
-2. **Dependencies**:
+2. **Install dependencies**
 
    ```bash
    flutter pub get
    ```
 
-3. **Android Platform**:
-   Ensure your `minSdkVersion` is 21 or higher.
+3. **Android configuration**
+
+   Ensure `minSdkVersion` is set to 21 or higher.
 
 ## Demo Flow
 
-1. **Home**: View the wildlife intelligence dashboard.
-2. **Add**: Upload a new piece of field footage.
-3. **Index**: Wait for V-Modal to complete semantic analysis.
-4. **Search**: Enter a natural language query or tap the **Visual Reference** icon to search using an image.
-5. **Discover**: Tap a result to jump directly to that moment in the video.
+1. **Home** — View the wildlife intelligence dashboard.
+2. **Add** — Upload a new field recording.
+3. **Index** — Wait for V-Modal to finish semantic analysis.
+4. **Search** — Enter a natural-language query or use the visual reference feature.
+5. **Discover** — Tap a result to jump directly to that moment in the footage.
 
 ---
 
-Built with WildSense & V-Modal.
+<p align="center">
+  Built with <strong>EcoVision</strong> and <strong>V-Modal</strong>.
+</p>

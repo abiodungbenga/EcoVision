@@ -23,17 +23,25 @@ class DiscoveryService extends GetxService {
   }
 
   Future<void> _loadBookmarks() async {
-    final items = await _db.collection(_collectionPath).get();
-    if (items != null) {
-      final loaded = items.entries
-          .map((e) => SearchResultModel.fromJson(e.value))
-          .toList();
-      final enriched = await _enrichResultsWithLocalThumbnails(loaded);
-      savedObservations.assignAll(
-        enriched
-            .where((result) => result.thumbnailUrl?.trim().isNotEmpty ?? false)
-            .toList(),
-      );
+    try {
+      final items = await _db.collection(_collectionPath).get();
+      if (items != null) {
+        final loaded = <SearchResultModel>[];
+        for (final entry in items.entries) {
+          try {
+            final model = SearchResultModel.fromJson(
+              Map<String, dynamic>.from(entry.value),
+            );
+            loaded.add(model);
+          } catch (_) {
+            // Migration / safety for corrupt or ancient schema records
+          }
+        }
+        final enriched = await _enrichResultsWithLocalThumbnails(loaded);
+        savedObservations.assignAll(enriched);
+      }
+    } catch (_) {
+      // Fail gracefully if collection read fails
     }
   }
 
@@ -57,22 +65,20 @@ class DiscoveryService extends GetxService {
         }
       }
 
-      final results = SearchResultModel.resolveTimestamps(
+      var results = SearchResultModel.resolveTimestamps(
         hits,
         query: 'Sightings',
-        videoPath: '',
+        videoPath: videoService.currentVideo?.filePath ?? '',
       );
+
+      // Sort newest / latest timestamps first
+      results.sort((a, b) => b.timestampMs.compareTo(a.timestampMs));
 
       // Resolve thumbnails for discovery feed from backend
       final remoteResults = await vmodalService.resolveThumbnails(results);
 
-      // Override with local thumbnails where possible (using video_snapshot_generator)
-      final imageResults = remoteResults
-          .where((result) => result.thumbnailUrl?.trim().isNotEmpty ?? false)
-          .toList();
-      sightingsFeed.value = await _enrichResultsWithLocalThumbnails(
-        imageResults,
-      );
+      // Enrich with local video paths & thumbnails
+      sightingsFeed.value = await _enrichResultsWithLocalThumbnails(remoteResults);
     } catch (e) {
       // Silently fail or log for feed
     } finally {
@@ -107,7 +113,7 @@ class DiscoveryService extends GetxService {
       if (path == null) {
         final localVideo = videoService.videoHistory.firstWhereOrNull(
           (v) => v.fileName == result.videoFileName,
-        );
+        ) ?? videoService.currentVideo;
         if (localVideo != null) {
           path = localVideo.filePath;
           result = result.copyWith(videoPath: path);

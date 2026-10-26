@@ -28,11 +28,11 @@ class HomeController extends GetxController {
     }
   }
 
-  Future<void> saveApiKey(String apiKey) async {
+  Future<bool> saveApiKey(String apiKey) async {
     final key = apiKey.trim();
     if (key.isEmpty) {
       SnackbarUtils.showError('Please enter a valid V-Modal API Key.');
-      return;
+      return false;
     }
 
     try {
@@ -40,8 +40,10 @@ class HomeController extends GetxController {
       await vmodalService.configure(key);
       discoveryService.fetchSightingsFeed();
       SnackbarUtils.showSuccess('V-Modal SDK configured successfully!');
+      return true;
     } catch (e) {
       SnackbarUtils.showError('Configuration failed: ${e.toString()}');
+      return false;
     } finally {
       isConnecting.value = false;
     }

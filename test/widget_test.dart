@@ -4,6 +4,7 @@ import 'package:wild_sense/core/services/video_service.dart';
 import 'package:wild_sense/core/services/vmodal_service.dart';
 import 'package:wild_sense/core/utils/duration_utils.dart';
 import 'package:wild_sense/shared/models/search_result_model.dart';
+import 'package:wild_sense/shared/models/observation_model.dart';
 
 void main() {
   testWidgets('EcoVision app smoke test', (WidgetTester tester) async {
@@ -110,6 +111,39 @@ void main() {
       expect(results.single.formattedTimestamp, '--:--');
       expect(results.single.timestampDuration, Duration.zero);
     });
+
+    test('SearchResultModel.fromJson handles null and missing legacy schema fields safely', () {
+      final legacyJson = <String, dynamic>{
+        'id': 'legacy_1',
+        'query': 'lion',
+        'title': 'Lion roar',
+      };
+
+      final model = SearchResultModel.fromJson(legacyJson);
+      expect(model.id, 'legacy_1');
+      expect(model.hasTimestamp, isTrue);
+      expect(model.timestampMs, 0);
+      expect(model.formattedTimestamp, '00:00');
+    });
+
+    test('multiple hits in one video are resolved as individual moment results', () {
+      final hits = [
+        {'title': 'Bear fishing', 'start_time': 10, 'filename': 'nature.mp4'},
+        {'title': 'Bear eating', 'start_time': 45, 'filename': 'nature.mp4'},
+        {'title': 'Bear resting', 'start_time': 120, 'filename': 'nature.mp4'},
+      ];
+
+      final results = SearchResultModel.resolveTimestamps(
+        hits,
+        query: 'bear',
+        videoPath: '/path/nature.mp4',
+      );
+
+      expect(results.length, 3);
+      expect(results[0].formattedTimestamp, '00:10');
+      expect(results[1].formattedTimestamp, '00:45');
+      expect(results[2].formattedTimestamp, '02:00');
+    });
   });
 
   group('CollectionReadiness tests', () {
@@ -192,6 +226,21 @@ void main() {
 
     test('falls back when the file name sanitizes to nothing', () {
       expect(VideoService.buildStreamName('...', '42'), 'vid_42');
+    });
+  });
+
+  group('ObservationModel tests', () {
+    test('ObservationModel.fromJson handles null and missing legacy schema fields safely', () {
+      final legacyJson = <String, dynamic>{
+        'id': 'obs_123',
+        'species': 'Giraffe',
+      };
+
+      final obs = ObservationModel.fromJson(legacyJson);
+      expect(obs.id, 'obs_123');
+      expect(obs.species, 'Giraffe');
+      expect(obs.timestampMs, 0);
+      expect(obs.formattedTimestamp, '00:00');
     });
   });
 }

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../shared/widgets/search_result_card.dart';
-import '../../../shared/widgets/fullscreen_image_viewer.dart';
 import '../controllers/search_controller.dart';
 
 class SearchView extends GetView<SearchViewController> {
@@ -323,10 +323,23 @@ class SearchView extends GetView<SearchViewController> {
                           final item = controller.searchResults[index];
                           return SearchResultCard(
                             result: item,
-                            onTap: () => FullscreenImageViewer.show(
-                              context,
-                              item.thumbnailUrl,
-                            ),
+                            onTap: () {
+                              Get.toNamed(
+                                AppRoutes.player,
+                                arguments: {
+                                  'videoPath': item.videoPath,
+                                  'videoName': item.videoFileName.isNotEmpty
+                                      ? item.videoFileName
+                                      : item.title,
+                                  'title': item.title,
+                                  'timestamp': item.timestampDuration,
+                                  'timestampText': item.formattedTimestamp,
+                                  'hasTimestamp': item.hasTimestamp,
+                                  'isTimestampApproximate':
+                                      item.isTimestampApproximate,
+                                },
+                              );
+                            },
                           );
                         },
                       ),

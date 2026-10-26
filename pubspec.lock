@@ -648,12 +648,11 @@ packages:
   vmodal_sdk_flutter:
     dependency: "direct main"
     description:
-      path: "."
-      ref: main
-      resolved-ref: "4d4c800f2ff9ffe849e4718f6ba48d5c9f292d60"
-      url: "https://github.com/v-modal/vmodal_sdk_flutter.git"
-    source: git
-    version: "1.1.0"
+      name: vmodal_sdk_flutter
+      sha256: "8072be6b4fa71f7014416038d8426737ea65fcbdf757f5b7d8fd466bc62cbf2d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.3"
   web:
     dependency: transitive
     description:

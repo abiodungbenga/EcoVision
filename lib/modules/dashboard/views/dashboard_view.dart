@@ -4,9 +4,10 @@ import 'dart:io';
 
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
+import '../../../core/services/video_service.dart';
 import '../controllers/dashboard_controller.dart';
 import '../../../shared/models/observation_model.dart';
-import '../../../shared/widgets/fullscreen_image_viewer.dart';
 
 class DashboardView extends GetView<DashboardController> {
   const DashboardView({super.key});
@@ -177,6 +178,32 @@ class DashboardView extends GetView<DashboardController> {
     BuildContext context,
     ObservationModel obs,
   ) {
+    void openPlayer() {
+      var path = obs.videoPath;
+      if (path.isEmpty) {
+        final videoService = Get.find<VideoService>();
+        final match = videoService.videoHistory.firstWhereOrNull(
+          (v) => v.fileName == obs.videoName,
+        ) ?? videoService.currentVideo;
+        if (match != null) {
+          path = match.filePath;
+        }
+      }
+
+      Get.toNamed(
+        AppRoutes.player,
+        arguments: {
+          'videoPath': path,
+          'videoName': obs.videoName.isNotEmpty ? obs.videoName : obs.species,
+          'title': '${obs.species} Sighting',
+          'timestamp': Duration(milliseconds: obs.timestampMs),
+          'timestampText': obs.formattedTimestamp,
+          'hasTimestamp': true,
+          'isTimestampApproximate': false,
+        },
+      );
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 1,
@@ -184,7 +211,7 @@ class DashboardView extends GetView<DashboardController> {
       child: ListTile(
         dense: true,
         leading: GestureDetector(
-          onTap: () => FullscreenImageViewer.show(context, obs.thumbnailUrl),
+          onTap: openPlayer,
           child: SizedBox(
             width: 56,
             height: 56,
@@ -192,14 +219,36 @@ class DashboardView extends GetView<DashboardController> {
               borderRadius: BorderRadius.circular(8),
               child: Container(
                 color: const Color(0xFFF1F5F9),
-                child: obs.thumbnailUrl == null || obs.thumbnailUrl!.isEmpty
-                    ? const Icon(Icons.image_not_supported_outlined)
-                    : Image(
-                        image: obs.thumbnailUrl!.startsWith('http')
-                            ? NetworkImage(obs.thumbnailUrl!)
-                            : FileImage(File(obs.thumbnailUrl!)),
-                        fit: BoxFit.cover,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: obs.thumbnailUrl == null || obs.thumbnailUrl!.isEmpty
+                          ? const Icon(Icons.movie_rounded, color: Color(0xFF94A3B8))
+                          : Image(
+                              image: obs.thumbnailUrl!.startsWith('http')
+                                  ? NetworkImage(obs.thumbnailUrl!)
+                                  : FileImage(File(obs.thumbnailUrl!)),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const Icon(
+                                Icons.movie_rounded,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
+                    ),
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black26,
+                        child: const Center(
+                          child: Icon(
+                            Icons.play_circle_fill_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
                       ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -213,11 +262,9 @@ class DashboardView extends GetView<DashboardController> {
           ),
         ),
         subtitle: Text(
-          obs.notes?.isNotEmpty == true
-              ? obs.notes!
-              : 'Saved image from ${obs.videoName}',
+          '${obs.formattedTimestamp} • ${obs.videoName.isNotEmpty ? obs.videoName : "Video"}',
           style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-          maxLines: 2,
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         trailing: Row(
@@ -229,13 +276,13 @@ class DashboardView extends GetView<DashboardController> {
             ),
             const SizedBox(width: 6),
             const Icon(
-              Icons.fullscreen_rounded,
+              Icons.play_circle_outline_rounded,
               color: Color(0xFF1B4D3E),
               size: 22,
             ),
           ],
         ),
-        onTap: () => FullscreenImageViewer.show(context, obs.thumbnailUrl),
+        onTap: openPlayer,
       ),
     );
   }

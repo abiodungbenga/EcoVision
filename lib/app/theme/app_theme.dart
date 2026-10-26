@@ -32,6 +32,26 @@ class AppTheme {
           fontWeight: FontWeight.bold,
         ),
       ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: surfaceColor,
+        surfaceTintColor: Colors.transparent,
+        elevation: 8,
+        insetPadding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 24,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titleTextStyle: const TextStyle(
+          color: textColor,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+        contentTextStyle: const TextStyle(
+          color: subtextColor,
+          fontSize: 14,
+          height: 1.45,
+        ),
+      ),
       cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 1.5,
@@ -45,6 +65,22 @@ class AppTheme {
           elevation: 1,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primaryColor,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -62,6 +98,14 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFB42318)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFB42318), width: 2),
         ),
       ),
     );

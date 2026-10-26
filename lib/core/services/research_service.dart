@@ -23,9 +23,17 @@ class ResearchService extends GetxService {
       // Load observations
       final obsItems = await _db.collection(_obsCollection).get();
       if (obsItems != null) {
-        final loadedObs = obsItems.entries
-            .map((e) => ObservationModel.fromJson(e.value))
-            .toList();
+        final loadedObs = <ObservationModel>[];
+        for (final entry in obsItems.entries) {
+          try {
+            final model = ObservationModel.fromJson(
+              Map<String, dynamic>.from(entry.value),
+            );
+            loadedObs.add(model);
+          } catch (_) {
+            // Skip broken/ancient entries gracefully
+          }
+        }
         // Sort newest first
         loadedObs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         observations.assignAll(loadedObs);
@@ -62,13 +70,9 @@ class ResearchService extends GetxService {
       return false; // Already exists
     }
 
-    try {
-      await _db.collection(_obsCollection).doc(obs.id).set(obs.toJson());
-      observations.insert(0, obs);
-      return true;
-    } catch (e) {
-      return false;
-    }
+    await _db.collection(_obsCollection).doc(obs.id).set(obs.toJson());
+    observations.insert(0, obs);
+    return true;
   }
 
   Future<void> logSearch(String query) async {

@@ -88,23 +88,34 @@ class SearchResultModel {
   }
 
   factory SearchResultModel.fromJson(Map<String, dynamic> json) {
+    final ms = (json['timestampDurationMs'] as num?)?.toInt() ??
+        (json['timestampMs'] as num?)?.toInt() ??
+        0;
+    final formattedTs = json['formattedTimestamp']?.toString();
+
     return SearchResultModel(
-      id: json['id'],
-      query: json['query'],
-      title: json['title'],
-      description: json['description'],
-      formattedTimestamp: json['formattedTimestamp'],
-      timestampDuration: Duration(milliseconds: json['timestampDurationMs']),
-      timestampMs: json['timestampMs'],
-      absoluteTimestampMs: json['absoluteTimestampMs'],
-      isTimestampApproximate: json['isTimestampApproximate'],
-      hasTimestamp: json['hasTimestamp'],
-      scoreText: json['scoreText'],
+      id: json['id']?.toString() ?? '',
+      query: json['query']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      formattedTimestamp: (formattedTs != null && formattedTs.isNotEmpty)
+          ? formattedTs
+          : DurationUtils.formatDuration(Duration(milliseconds: ms)),
+      timestampDuration: Duration(milliseconds: ms),
+      timestampMs: ms,
+      absoluteTimestampMs: (json['absoluteTimestampMs'] as num?)?.toInt(),
+      isTimestampApproximate: json['isTimestampApproximate'] as bool? ?? false,
+      hasTimestamp: json['hasTimestamp'] as bool? ?? true,
+      scoreText: json['scoreText']?.toString() ?? '',
       score: (json['score'] as num?)?.toDouble() ?? 0.0,
-      videoFileName: json['videoFileName'],
-      videoPath: json['videoPath'],
-      thumbnailUrl: json['thumbnailUrl'],
-      rawHit: json['rawHit'],
+      videoFileName: json['videoFileName']?.toString() ?? '',
+      videoPath: json['videoPath']?.toString() ?? '',
+      thumbnailUrl: json['thumbnailUrl']?.toString(),
+      rawHit: json['rawHit'] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(json['rawHit'])
+          : json['rawHit'] is Map
+              ? (json['rawHit'] as Map).map((k, v) => MapEntry('$k', v))
+              : <String, dynamic>{},
     );
   }
 

@@ -42,20 +42,25 @@ class ObservationModel {
   }
 
   factory ObservationModel.fromJson(Map<String, dynamic> json) {
+    final tsMs = (json['timestampMs'] as num?)?.toInt() ?? 0;
+    final formattedTs = json['formattedTimestamp']?.toString();
+
     return ObservationModel(
-      id: json['id'] ?? '',
-      species: json['species'] ?? '',
-      videoId: json['videoId'] ?? '',
-      videoName: json['videoName'] ?? '',
-      videoPath: json['videoPath'] ?? '',
-      timestampMs: json['timestampMs'] ?? 0,
-      formattedTimestamp: json['formattedTimestamp'] ?? '00:00',
-      searchQuery: json['searchQuery'] ?? '',
+      id: json['id']?.toString() ?? '',
+      species: json['species']?.toString() ?? '',
+      videoId: json['videoId']?.toString() ?? '',
+      videoName: json['videoName']?.toString() ?? '',
+      videoPath: json['videoPath']?.toString() ?? '',
+      timestampMs: tsMs,
+      formattedTimestamp: (formattedTs != null && formattedTs.isNotEmpty)
+          ? formattedTs
+          : '${(tsMs ~/ 1000 ~/ 60).toString().padLeft(2, '0')}:${((tsMs ~/ 1000) % 60).toString().padLeft(2, '0')}',
+      searchQuery: json['searchQuery']?.toString() ?? '',
       createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
-      thumbnailUrl: json['thumbnailUrl'],
-      notes: json['notes'],
+      thumbnailUrl: json['thumbnailUrl']?.toString(),
+      notes: json['notes']?.toString(),
     );
   }
 }

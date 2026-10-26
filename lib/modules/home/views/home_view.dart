@@ -4,10 +4,10 @@ import 'dart:io';
 
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../shared/widgets/video_card.dart';
-import '../../../shared/widgets/fullscreen_image_viewer.dart';
 import '../../../shared/models/search_result_model.dart';
 import '../controllers/home_controller.dart';
 
@@ -88,8 +88,37 @@ class HomeView extends GetView<HomeController> {
   Widget _buildMomentCard(BuildContext context, SearchResultModel result) {
     final thumbUrl = result.thumbnailUrl;
 
+    void openPlayer() {
+      var path = result.videoPath;
+      if (path.isEmpty) {
+        final match =
+            controller.videoService.videoHistory.firstWhereOrNull(
+              (v) => v.fileName == result.videoFileName,
+            ) ??
+            controller.currentVideo;
+        if (match != null) {
+          path = match.filePath;
+        }
+      }
+
+      Get.toNamed(
+        AppRoutes.player,
+        arguments: {
+          'videoPath': path,
+          'videoName': result.videoFileName.isNotEmpty
+              ? result.videoFileName
+              : result.title,
+          'title': result.title,
+          'timestamp': result.timestampDuration,
+          'timestampText': result.formattedTimestamp,
+          'hasTimestamp': result.hasTimestamp,
+          'isTimestampApproximate': result.isTimestampApproximate,
+        },
+      );
+    }
+
     return GestureDetector(
-      onTap: () => FullscreenImageViewer.show(context, thumbUrl),
+      onTap: openPlayer,
       child: Container(
         width: 220,
         margin: const EdgeInsets.only(right: 16, bottom: 8),
@@ -127,12 +156,52 @@ class HomeView extends GetView<HomeController> {
                                 ? NetworkImage(thumbUrl)
                                 : FileImage(File(thumbUrl)),
                             fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const Center(
+                              child: Icon(
+                                Icons.movie_rounded,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
                           ),
                         ),
                       ),
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black26,
+                        child: const Center(
+                          child: Icon(
+                            Icons.play_circle_fill_rounded,
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                        ),
+                      ),
+                    ),
                     Positioned(
                       top: 8,
-                      right: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B4D3E),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Start @ ${result.formattedTimestamp}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
                       child: Obx(
                         () => IconButton(
                           icon: Icon(
@@ -144,13 +213,6 @@ class HomeView extends GetView<HomeController> {
                           onPressed: () => controller.discoveryService
                               .toggleBookmark(result),
                         ),
-                      ),
-                    ),
-                    const Center(
-                      child: Icon(
-                        Icons.fullscreen_rounded,
-                        color: Colors.white,
-                        size: 34,
                       ),
                     ),
                   ],
@@ -173,11 +235,15 @@ class HomeView extends GetView<HomeController> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Animal image result',
+                    result.videoFileName.isNotEmpty
+                        ? result.videoFileName
+                        : 'Wildlife Moment',
                     style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF64748B),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -521,45 +587,102 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  void _showApiKeyDialog(BuildContext context) {
-    showDialog(
+  Future<void> _showApiKeyDialog(BuildContext context) async {
+    final formKey = GlobalKey<FormState>();
+    var obscureApiKey = true;
+    var isSaving = false;
+
+    Future<void> saveKey(
+      StateSetter updateDialog,
+      BuildContext dialogContext,
+    ) async {
+      if (isSaving || !formKey.currentState!.validate()) return;
+      updateDialog(() => isSaving = true);
+      final saved = await controller.saveApiKey(
+        controller.apiKeyController.text,
+      );
+      if (!dialogContext.mounted) return;
+      if (saved) {
+        Navigator.of(dialogContext).pop();
+      } else {
+        updateDialog(() => isSaving = false);
+      }
+    }
+
+    await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('V-Modal API Key'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Enter your V-Modal runtime API key to authorize indexing and search:',
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('V-Modal API Key'),
+          content: Form(
+            key: formKey,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Enter your V-Modal runtime API key to authorize indexing and search.',
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: controller.apiKeyController,
+                    autofocus: true,
+                    enabled: !isSaving,
+                    obscureText: obscureApiKey,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => saveKey(setState, dialogContext),
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Enter an API key to continue.'
+                        : null,
+                    decoration: InputDecoration(
+                      labelText: 'API key',
+                      hintText: 'Enter your API key',
+                      prefixIcon: const Icon(Icons.key_rounded),
+                      suffixIcon: IconButton(
+                        tooltip: obscureApiKey
+                            ? 'Show API key'
+                            : 'Hide API key',
+                        onPressed: () {
+                          setState(() => obscureApiKey = !obscureApiKey);
+                        },
+                        icon: Icon(
+                          obscureApiKey
+                              ? Icons.visibility_rounded
+                              : Icons.visibility_off_rounded,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: controller.apiKeyController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  hintText: 'Enter API Key',
-                  prefixIcon: Icon(Icons.key),
-                ),
-              ),
-            ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: isSaving
+                  ? null
+                  : () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: isSaving
+                  ? null
+                  : () => saveKey(setState, dialogContext),
+              child: isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Save key'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              controller.saveApiKey(controller.apiKeyController.text);
-            },
-            child: const Text('Save Key'),
-          ),
-        ],
       ),
     );
   }

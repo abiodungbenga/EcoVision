@@ -35,10 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   get: ^4.6.6
-  vmodal_sdk_flutter:
-    git:
-      url: https://github.com/v-modal/vmodal_sdk_flutter.git
-      ref: main
+  vmodal_sdk_flutter: ^1.2.3
   video_player: ^2.8.1
   file_picker: ^12.1.0
   google_fonts: ^6.1.0

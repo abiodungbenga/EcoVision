@@ -20,6 +20,7 @@ import 'package:wild_sense/shared/models/video_model.dart';
 import 'package:wild_sense/shared/widgets/app_bottom_navigation_bar.dart';
 import 'package:wild_sense/shared/widgets/video_card.dart';
 import 'package:wild_sense/modules/about/views/about_view.dart';
+import 'package:wild_sense/modules/saved_sightings/views/saved_sightings_view.dart';
 
 void main() {
   testWidgets('EcoVision app smoke test', (WidgetTester tester) async {
@@ -220,6 +221,36 @@ void main() {
         expect(results[2].formattedTimestamp, '02:00');
       },
     );
+  });
+
+  test('saved sightings filters combine search, video, and timestamp', () {
+    final sightings = SearchResultModel.resolveTimestamps(
+      [
+        {
+          'title': 'Elephant by the river',
+          'filename': 'river.mp4',
+          'start_time': 18,
+        },
+        {
+          'title': 'Elephant in the grassland',
+          'filename': 'savannah.mp4',
+          'start_time': 42,
+        },
+        {'title': 'Elephant without a timecode', 'filename': 'river.mp4'},
+      ],
+      query: 'elephant',
+      videoPath: '/path/to/video.mp4',
+    );
+
+    final filtered = filterSavedSightings(
+      sightings,
+      query: 'elephant',
+      videoFileName: 'river.mp4',
+      timestampFilter: SavedTimestampFilter.timestamped,
+    );
+
+    expect(filtered.length, 1);
+    expect(filtered.single.title, 'Elephant by the river');
   });
 
   group('CollectionReadiness tests', () {

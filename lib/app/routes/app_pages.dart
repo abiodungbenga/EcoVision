@@ -9,6 +9,7 @@ import '../../modules/search/bindings/search_binding.dart';
 import '../../modules/search/views/search_view.dart';
 import '../../modules/player/bindings/player_binding.dart';
 import '../../modules/player/views/player_view.dart';
+import '../../modules/saved_sightings/views/saved_sightings_view.dart';
 import '../../modules/dashboard/bindings/dashboard_binding.dart';
 import '../../modules/dashboard/views/dashboard_view.dart';
 import '../../modules/splash/views/splash_view.dart';
@@ -45,5 +46,9 @@ class AppPages {
       binding: DashboardBinding(),
     ),
     GetPage(name: AppRoutes.about, page: () => const AboutView()),
+    GetPage(
+      name: AppRoutes.savedSightings,
+      page: () => const SavedSightingsView(),
+    ),
   ];
 }

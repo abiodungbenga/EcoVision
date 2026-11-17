@@ -218,22 +218,38 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildSavedObservations() {
-    return Obx(() {
-      if (controller.discoveryService.savedObservations.isEmpty) {
-        return _buildEmptyDiscovery(
-          context,
-          'You haven\'t saved any observations yet.',
-        );
-      }
-      return ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: controller.discoveryService.savedObservations.length,
-        itemBuilder: (context, index) {
-          final result = controller.discoveryService.savedObservations[index];
-          return _buildMomentCard(context, result);
-        },
-      );
-    });
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () => Get.toNamed(AppRoutes.savedSightings),
+            icon: const Icon(Icons.grid_view_rounded, size: 17),
+            label: const Text('View all saved'),
+          ),
+        ),
+        Expanded(
+          child: Obx(() {
+            if (controller.discoveryService.savedObservations.isEmpty) {
+              return _buildEmptyDiscovery(
+                context,
+                'You haven\'t saved any observations yet.',
+              );
+            }
+            return ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: controller.discoveryService.savedObservations.length,
+              itemBuilder: (context, index) {
+                final result =
+                    controller.discoveryService.savedObservations[index];
+                return _buildMomentCard(context, result);
+              },
+            );
+          }),
+        ),
+      ],
+    );
   }
 
   Widget _buildMomentCard(BuildContext context, SearchResultModel result) {

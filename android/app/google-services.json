@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "248695118816",
+    "project_id": "ecovisionwild",
+    "storage_bucket": "ecovisionwild.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:248695118816:android:1f0a22b8eaed6d5c722985",
+        "android_client_info": {
+          "package_name": "com.example.ecovision"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDe4OOpJ1wAQKjMLTuW5F73ryLR0KvHYZU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

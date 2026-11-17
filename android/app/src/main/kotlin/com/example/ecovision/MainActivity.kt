@@ -1,4 +1,4 @@
-package com.example.wild_sense
+package com.example.ecovision
 
 import io.flutter.embedding.android.FlutterActivity
 

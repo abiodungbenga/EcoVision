@@ -2,33 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
+import '../../../core/services/api_key_service.dart';
 import '../../../core/services/video_service.dart';
 import '../../../core/services/vmodal_service.dart';
+import '../../../core/services/indexing_service.dart';
 import '../../../core/services/discovery_service.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../shared/models/video_model.dart';
 
 class HomeController extends GetxController {
   final VModalService vmodalService = Get.find<VModalService>();
+  final ApiKeyService apiKeyService = Get.find<ApiKeyService>();
   final VideoService videoService = Get.find<VideoService>();
   final DiscoveryService discoveryService = Get.find<DiscoveryService>();
+  final IndexingService indexingService = Get.find<IndexingService>();
 
   final apiKeyController = TextEditingController();
   final isConnecting = false.obs;
 
   VideoModel? get currentVideo => videoService.currentVideo;
-  bool get hasIndexedVideo => currentVideo?.status == VideoStatus.indexed;
+  bool get hasIndexedVideo =>
+      videoService.videoHistory.any((video) => video.isIndexed);
 
   @override
   void onInit() {
     super.onInit();
     if (vmodalService.isConfigured) {
-      apiKeyController.text = vmodalService.apiKey;
       discoveryService.fetchSightingsFeed();
     }
   }
 
-  Future<bool> saveApiKey(String apiKey) async {
+  Future<bool> saveApiKey(
+    String apiKey, {
+    required ApiKeyRetention retention,
+  }) async {
     final key = apiKey.trim();
     if (key.isEmpty) {
       SnackbarUtils.showError('Please enter a valid V-Modal API Key.');
@@ -37,9 +44,10 @@ class HomeController extends GetxController {
 
     try {
       isConnecting.value = true;
-      await vmodalService.configure(key);
+      await apiKeyService.save(key, retention);
+      await indexingService.resumePendingIndexing();
       discoveryService.fetchSightingsFeed();
-      SnackbarUtils.showSuccess('V-Modal SDK configured successfully!');
+      SnackbarUtils.showSuccess('Your encrypted API key is ready to use.');
       return true;
     } catch (e) {
       SnackbarUtils.showError('Configuration failed: ${e.toString()}');
@@ -49,27 +57,69 @@ class HomeController extends GetxController {
     }
   }
 
-  void goToUpload() {
-    Get.toNamed(AppRoutes.upload);
+  Future<bool> revokeApiKey() async {
+    try {
+      await apiKeyService.revoke();
+      apiKeyController.clear();
+      SnackbarUtils.showSuccess('The saved API key has been revoked.');
+      return true;
+    } catch (error) {
+      SnackbarUtils.showError('Could not revoke the API key: $error');
+      return false;
+    }
   }
 
-  void goToSearch() {
+  Future<bool> updateApiKeyRetention(ApiKeyRetention retention) async {
+    try {
+      await apiKeyService.updateRetention(retention);
+      SnackbarUtils.showSuccess('API key retention was updated.');
+      return true;
+    } catch (error) {
+      SnackbarUtils.showError('Could not update API key retention: $error');
+      return false;
+    }
+  }
+
+  void goToUpload() {
+    Get.offNamed(AppRoutes.upload);
+  }
+
+  Future<void> goToSearch() async {
     if (!vmodalService.isConfigured) {
       SnackbarUtils.showInfo('Please configure your V-Modal API key first.');
       return;
     }
-    if (!hasIndexedVideo) {
+    final profileId = apiKeyService.apiKeyProfileId;
+    var video = currentVideo;
+    if (video?.apiKeyProfileId != null && video?.apiKeyProfileId != profileId) {
+      video = null;
       SnackbarUtils.showInfo(
-        'Please upload and index a video footage before searching.',
+        'This video belongs to another API key. Select it again to upload it under the current key.',
       );
+    }
+    if (video?.isIndexed != true) {
+      video = videoService.videoHistory.firstWhereOrNull(
+        (savedVideo) =>
+            savedVideo.isIndexed &&
+            (savedVideo.apiKeyProfileId == null ||
+                savedVideo.apiKeyProfileId == profileId),
+      );
+      if (video != null) await videoService.setCurrentVideo(video);
+    }
+    if (video?.isIndexed != true) {
+      SnackbarUtils.showInfo('Upload and index a video before searching.');
       Get.toNamed(AppRoutes.upload);
       return;
     }
-    Get.toNamed(AppRoutes.search);
+    Get.offNamed(AppRoutes.search);
   }
 
   void goToDashboard() {
-    Get.toNamed(AppRoutes.dashboard);
+    Get.offNamed(AppRoutes.dashboard);
+  }
+
+  void goToAbout() {
+    Get.toNamed(AppRoutes.about);
   }
 
   @override

@@ -419,9 +419,7 @@ class VModalService extends GetxService {
     }
 
     if (readiness.searchSources.isEmpty) {
-      throw SearchException(
-        'No searchable modality is configured for "$col".',
-      );
+      throw SearchException('No searchable modality is configured for "$col".');
     }
 
     final scope = getScope(
@@ -458,8 +456,8 @@ class VModalService extends GetxService {
     // We use the underlying client to search without a specific stream filter.
     // However, the SDK's SearchRequest defaults streamName to 'astream'.
     // We'll target the collection-level search if supported by the backend.
-    final scope = getScope(collectionName: col, streamName: ''); 
-    
+    final scope = getScope(collectionName: col, streamName: '');
+
     return _searchInternal(
       scope: scope,
       query: query?.trim() ?? '',
@@ -547,12 +545,14 @@ class VModalService extends GetxService {
       }).toList();
 
       final urlsResponse = await _client!.images.getUrlBulk(records);
-      
+
       final updatedResults = <SearchResultModel>[];
       for (var i = 0; i < results.length; i++) {
         final row = urlsResponse.records[i];
         final url = '${row['url_pre_signed'] ?? ''}'.trim();
-        updatedResults.add(results[i].copyWith(thumbnailUrl: url.isNotEmpty ? url : null));
+        updatedResults.add(
+          results[i].copyWith(thumbnailUrl: url.isNotEmpty ? url : null),
+        );
       }
       return updatedResults;
     } catch (e) {
@@ -563,18 +563,22 @@ class VModalService extends GetxService {
 
   /// Disposes active client and project resources safely.
   Future<void> disposeResources() async {
+    final provider = _apiKeyProvider;
+    final project = _project;
+    _apiKeyProvider = null;
+    _project = null;
+    _client = null;
+    _isConfigured.value = false;
+    _apiKey.value = '';
+
     try {
-      _apiKeyProvider?.clear();
-      _apiKeyProvider = null;
-      if (_project != null) {
-        await _project!.close();
-        _project = null;
-      }
-      _client = null;
-      _isConfigured.value = false;
-      _apiKey.value = '';
-    } catch (_) {}
+      provider?.clear();
+    } finally {
+      await project?.close();
+    }
   }
+
+  Future<void> clearConfiguration() => disposeResources();
 
   @override
   void onClose() {

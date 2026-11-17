@@ -5,4 +5,5 @@ abstract class AppRoutes {
   static const search = '/search';
   static const player = '/player';
   static const dashboard = '/dashboard';
+  static const about = '/about';
 }

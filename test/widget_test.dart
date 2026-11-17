@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:features_tour/features_tour.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
@@ -5,12 +7,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'package:network_internet_checker/network_internet_checker.dart';
 import 'package:wild_sense/app/app.dart';
+import 'package:wild_sense/app/theme/app_theme.dart';
+import 'package:wild_sense/core/services/api_key_service.dart';
 import 'package:wild_sense/core/services/video_service.dart';
 import 'package:wild_sense/core/services/vmodal_service.dart';
 import 'package:wild_sense/core/utils/duration_utils.dart';
 import 'package:wild_sense/shared/models/search_result_model.dart';
 import 'package:wild_sense/shared/models/observation_model.dart';
+import 'package:wild_sense/shared/models/video_model.dart';
+import 'package:wild_sense/shared/widgets/app_bottom_navigation_bar.dart';
+import 'package:wild_sense/shared/widgets/video_card.dart';
+import 'package:wild_sense/modules/about/views/about_view.dart';
 
 void main() {
   testWidgets('EcoVision app smoke test', (WidgetTester tester) async {
@@ -20,9 +29,26 @@ void main() {
     FeaturesTour.setGlobalConfig(
       preDialogConfig: PreDialogConfig(enabled: false),
     );
+    final checker = _FakeInternetChecker();
     await tester.pumpWidget(
-      const EcoVisionApp(initialThemeMode: AdaptiveThemeMode.dark),
+      EcoVisionApp(
+        initialThemeMode: AdaptiveThemeMode.dark,
+        internetChecker: checker,
+      ),
     );
+    await tester.pump();
+    checker.emit(InternetStatus.connected);
+    await tester.pump();
+    expect(find.text('Connection restored'), findsNothing);
+    checker.emit(InternetStatus.disconnected);
+    await tester.pump();
+    expect(find.text('No internet connection'), findsOneWidget);
+    checker.emit(InternetStatus.connected);
+    await tester.pump();
+    expect(find.text('Connection restored'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.text('Connection restored'), findsNothing);
+    await checker.dispose();
     expect(
       Theme.of(tester.element(find.byType(Scaffold).first)).brightness,
       Brightness.dark,
@@ -296,4 +322,262 @@ void main() {
       expect(obs.formattedTimestamp, '00:00');
     });
   });
+
+  group('Video library tests', () {
+    test('saved upload metadata retains its stream and uploaded state', () {
+      final video = VideoModel(
+        id: '123',
+        fileName: 'wildlife.mp4',
+        filePath: r'C:\videos\wildlife.mp4',
+        sizeBytes: 2048,
+        status: VideoStatus.indexed,
+        isUploaded: true,
+        indexJobId: 'job-1',
+        apiKeyProfileId: 'account-a',
+        streamName: 'wildlife_123',
+      );
+
+      final restored = VideoModel.fromJson(video.toJson());
+
+      expect(restored.isUploaded, isTrue);
+      expect(restored.status, VideoStatus.indexed);
+      expect(restored.streamName, video.streamName);
+      expect(restored.indexJobId, video.indexJobId);
+      expect(restored.apiKeyProfileId, 'account-a');
+    });
+
+    test('an already saved local video is found by path and file size', () {
+      final service = VideoService();
+      final video = VideoModel(
+        id: '123',
+        fileName: 'wildlife.mp4',
+        filePath: r'C:\videos\wildlife.mp4',
+        sizeBytes: 2048,
+        status: VideoStatus.indexed,
+        isUploaded: true,
+        streamName: 'wildlife_123',
+      );
+      service.videoHistory.add(video);
+
+      expect(
+        service.findExistingLocalVideo(
+          filePath: video.filePath,
+          sizeBytes: video.sizeBytes,
+          lastModifiedMs: 1000,
+        ),
+        same(video),
+      );
+      expect(
+        service.findExistingLocalVideo(
+          filePath: video.filePath,
+          sizeBytes: video.sizeBytes + 1,
+          lastModifiedMs: 1000,
+        ),
+        isNull,
+      );
+    });
+
+    test('a local file is reused only for the API key that uploaded it', () {
+      final service = VideoService();
+      final video = VideoModel(
+        id: '123',
+        fileName: 'wildlife.mp4',
+        filePath: r'C:\videos\wildlife.mp4',
+        sizeBytes: 2048,
+        apiKeyProfileId: 'account-a',
+        status: VideoStatus.indexed,
+        isUploaded: true,
+      );
+      service.videoHistory.add(video);
+
+      expect(
+        service.findExistingLocalVideo(
+          filePath: video.filePath,
+          sizeBytes: video.sizeBytes,
+          lastModifiedMs: 1000,
+          apiKeyProfileId: 'account-a',
+        ),
+        same(video),
+      );
+      expect(
+        service.findExistingLocalVideo(
+          filePath: video.filePath,
+          sizeBytes: video.sizeBytes,
+          lastModifiedMs: 1000,
+          apiKeyProfileId: 'account-b',
+        ),
+        isNull,
+      );
+    });
+  });
+
+  group('API key retention tests', () {
+    test(
+      'temporary keys expire and the same key keeps its device profile',
+      () async {
+        final store = _MemorySecureValueStore();
+        final vmodal = _FakeVModalService();
+        var now = DateTime(2026, 11, 17);
+        final service = ApiKeyService(
+          vmodalService: vmodal,
+          storage: store,
+          clock: () => now,
+        );
+
+        await service.initialize();
+        await service.save('example-secret', ApiKeyRetention.oneDay);
+        final profileId = service.apiKeyProfileId;
+        expect(service.expiresAt, DateTime(2026, 11, 18));
+        expect(vmodal.configuredKey, 'example-secret');
+
+        service.onClose();
+        now = now.add(const Duration(days: 2));
+        final restoredService = ApiKeyService(
+          vmodalService: _FakeVModalService(),
+          storage: store,
+          clock: () => now,
+        );
+        await restoredService.initialize();
+
+        expect(restoredService.credentialExpired.value, isTrue);
+        expect(restoredService.hasSavedCredential.value, isFalse);
+        expect(store.values.containsKey('vmodal_api_credential'), isFalse);
+
+        await restoredService.save('example-secret', ApiKeyRetention.permanent);
+        expect(restoredService.apiKeyProfileId, profileId);
+        expect(restoredService.expiresAt, isNull);
+        await restoredService.revoke();
+        expect(restoredService.hasSavedCredential.value, isFalse);
+        expect(store.values.containsKey('vmodal_api_credential'), isFalse);
+        expect(
+          store.values.containsKey('vmodal_api_fingerprint_secret'),
+          isTrue,
+        );
+        restoredService.onClose();
+      },
+    );
+  });
+
+  testWidgets('video card actions wrap at narrow widths', (tester) async {
+    final video = VideoModel(
+      id: '123',
+      fileName: 'wildlife.mp4',
+      filePath: r'C:\videos\wildlife.mp4',
+      sizeBytes: 2048,
+      status: VideoStatus.selected,
+      streamName: 'wildlife_123',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 260,
+              child: VideoCard(video: video, onUploadTap: () {}),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mobile bottom navigation fits a narrow screen', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 320,
+          height: 640,
+          child: const Scaffold(
+            bottomNavigationBar: AppBottomNavigationBar(selectedIndex: 0),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Upload'), findsOneWidget);
+    expect(find.text('Search'), findsOneWidget);
+    expect(find.text('Research'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('About page explains the wildlife research workflow', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(theme: AppTheme.lightTheme, home: const AboutView()),
+    );
+
+    expect(find.text('About EcoVision'), findsOneWidget);
+    expect(find.text('How it works'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Made for research workflows'),
+      300,
+    );
+    expect(find.text('Made for research workflows'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Explore the project on GitHub'),
+      300,
+    );
+    expect(find.text('Explore the project on GitHub'), findsOneWidget);
+  });
+}
+
+class _MemorySecureValueStore implements SecureValueStore {
+  final Map<String, String> values = {};
+
+  @override
+  Future<String?> read(String key) async => values[key];
+
+  @override
+  Future<void> write(String key, String value) async {
+    values[key] = value;
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    values.remove(key);
+  }
+}
+
+class _FakeVModalService extends VModalService {
+  String? configuredKey;
+
+  @override
+  Future<bool> configure(String apiKey, {String? projectId}) async {
+    configuredKey = apiKey;
+    return true;
+  }
+
+  @override
+  Future<void> clearConfiguration() async {
+    configuredKey = null;
+  }
+}
+
+class _FakeInternetChecker extends InternetChecker {
+  final StreamController<InternetStatus> _controller =
+      StreamController<InternetStatus>.broadcast();
+  InternetStatus? _status;
+
+  @override
+  InternetStatus? get lastStatus => _status;
+
+  @override
+  Stream<InternetStatus> get onStatusChange => _controller.stream;
+
+  @override
+  Future<InternetStatus> checkNow() async =>
+      _status ?? InternetStatus.connected;
+
+  void emit(InternetStatus status) {
+    _status = status;
+    _controller.add(status);
+  }
+
+  Future<void> dispose() => _controller.close();
 }

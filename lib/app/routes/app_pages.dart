@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../modules/about/views/about_view.dart';
 import '../../modules/home/bindings/home_binding.dart';
 import '../../modules/home/views/home_view.dart';
 import '../../modules/upload/bindings/upload_binding.dart';
@@ -43,5 +44,6 @@ class AppPages {
       page: () => const DashboardView(),
       binding: DashboardBinding(),
     ),
+    GetPage(name: AppRoutes.about, page: () => const AboutView()),
   ];
 }

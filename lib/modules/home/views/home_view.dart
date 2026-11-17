@@ -4,12 +4,17 @@ import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:features_tour/features_tour.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:network_internet_checker/network_internet_checker.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/api_key_service.dart';
+import '../../../core/services/network_status_service.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../shared/widgets/app_logo.dart';
+import '../../../shared/widgets/app_bottom_navigation_bar.dart';
 import '../../../shared/widgets/video_card.dart';
 import '../../../shared/models/search_result_model.dart';
 import '../controllers/home_controller.dart';
@@ -101,6 +106,56 @@ class _HomeViewState extends State<HomeView> {
         }
       },
       child: child,
+    );
+  }
+
+  Widget _buildNetworkStatus(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return InternetStatusBuilder(
+      checker: Get.find<NetworkStatusService>().checker,
+      builder: (context, status) {
+        final connected = status == InternetStatus.connected;
+        final disconnected = status == InternetStatus.disconnected;
+        final color = connected
+            ? palette.success
+            : disconnected
+            ? palette.error
+            : palette.secondaryText;
+        final label = connected
+            ? 'Online'
+            : disconnected
+            ? 'Offline'
+            : 'Checking';
+        final icon = connected
+            ? Icons.cloud_done_outlined
+            : disconnected
+            ? Icons.cloud_off_outlined
+            : Icons.cloud_queue_outlined;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: color.withValues(alpha: 0.24)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -374,6 +429,7 @@ class _HomeViewState extends State<HomeView> {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     return Scaffold(
+      bottomNavigationBar: const AppBottomNavigationBar(selectedIndex: 0),
       appBar: AppBar(
         title: _tourStep(
           context: context,
@@ -433,11 +489,6 @@ class _HomeViewState extends State<HomeView> {
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.insights_outlined),
-            tooltip: 'Research dashboard',
-            onPressed: controller.goToDashboard,
-          ),
-          IconButton(
             icon: const Icon(Icons.tune_rounded),
             tooltip: 'API Key Configuration',
             onPressed: () => _showApiKeyDialog(context),
@@ -447,53 +498,63 @@ class _HomeViewState extends State<HomeView> {
       body: SafeArea(
         bottom: true,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 36),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 8,
                 children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: palette.accent,
-                      shape: BoxShape.circle,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: palette.accent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Text(
+                        'FIELDWORK',
+                        style: TextStyle(
+                          color: palette.secondaryText,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 9),
-                  Text(
-                    'FIELDWORK, MADE SEARCHABLE',
-                    style: TextStyle(
-                      color: palette.secondaryText,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
+                  _buildNetworkStatus(context),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
               Text(
-                'Find the moment\nthat matters.',
+                'Your fieldwork',
                 style: TextStyle(
                   color: palette.text,
-                  fontSize: 38,
-                  height: 1.08,
+                  fontSize: 28,
+                  height: 1.12,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: -1.6,
+                  letterSpacing: -1.1,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
-                'Bring your wildlife footage together and discover the details worth a closer look.',
+                'Manage your clips, find important moments, and keep observations together.',
                 style: TextStyle(
                   color: palette.secondaryText,
-                  fontSize: 15,
+                  fontSize: 14,
                   height: 1.55,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               Row(
                 children: [
                   Expanded(
@@ -526,17 +587,24 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 ],
               ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: controller.goToDashboard,
-                  icon: const Icon(Icons.insights_outlined, size: 17),
-                  label: const Text('Open research dashboard'),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.only(left: 2, top: 12, bottom: 4),
-                    foregroundColor: palette.secondaryText,
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  TextButton.icon(
+                    onPressed: controller.goToAbout,
+                    icon: const Icon(Icons.info_outline_rounded, size: 17),
+                    label: const Text('About EcoVision'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.only(
+                        left: 2,
+                        top: 12,
+                        bottom: 4,
+                      ),
+                      foregroundColor: palette.secondaryText,
+                    ),
                   ),
-                ),
+                ],
               ),
               const SizedBox(height: 22),
               _tourStep(
@@ -725,6 +793,9 @@ class _HomeViewState extends State<HomeView> {
     final formKey = GlobalKey<FormState>();
     var obscureApiKey = true;
     var isSaving = false;
+    var retention =
+        controller.apiKeyService.retention ?? ApiKeyRetention.oneWeek;
+    controller.apiKeyController.clear();
 
     Future<void> saveKey(
       StateSetter updateDialog,
@@ -734,9 +805,61 @@ class _HomeViewState extends State<HomeView> {
       updateDialog(() => isSaving = true);
       final saved = await controller.saveApiKey(
         controller.apiKeyController.text,
+        retention: retention,
       );
       if (!dialogContext.mounted) return;
       if (saved) {
+        Navigator.of(dialogContext).pop();
+      } else {
+        updateDialog(() => isSaving = false);
+      }
+    }
+
+    Future<void> revokeKey(
+      StateSetter updateDialog,
+      BuildContext dialogContext,
+    ) async {
+      final confirmed = await showDialog<bool>(
+        context: dialogContext,
+        builder: (confirmationContext) => AlertDialog(
+          title: const Text('Revoke saved API key?'),
+          content: const Text(
+            'This removes the encrypted key from this device and disconnects V-Modal. Your uploaded videos remain in your library.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(confirmationContext).pop(false),
+              child: const Text('Keep key'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(confirmationContext).pop(true),
+              child: const Text('Revoke key'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !dialogContext.mounted) return;
+      updateDialog(() => isSaving = true);
+      final revoked = await controller.revokeApiKey();
+      if (!dialogContext.mounted) return;
+      if (revoked) {
+        Navigator.of(dialogContext).pop();
+      } else {
+        updateDialog(() => isSaving = false);
+      }
+    }
+
+    Future<void> updateRetention(
+      StateSetter updateDialog,
+      BuildContext dialogContext,
+    ) async {
+      if (isSaving || !controller.apiKeyService.hasSavedCredential.value) {
+        return;
+      }
+      updateDialog(() => isSaving = true);
+      final updated = await controller.updateApiKeyRetention(retention);
+      if (!dialogContext.mounted) return;
+      if (updated) {
         Navigator.of(dialogContext).pop();
       } else {
         updateDialog(() => isSaving = false);
@@ -747,53 +870,141 @@ class _HomeViewState extends State<HomeView> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('V-Modal API Key'),
-          content: Form(
-            key: formKey,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Enter your V-Modal runtime API key to authorize indexing and search.',
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: controller.apiKeyController,
-                    autofocus: true,
-                    enabled: !isSaving,
-                    obscureText: obscureApiKey,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => saveKey(setState, dialogContext),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Enter an API key to continue.'
-                        : null,
-                    decoration: InputDecoration(
-                      labelText: 'API key',
-                      hintText: 'Enter your API key',
-                      prefixIcon: const Icon(Icons.key_rounded),
-                      suffixIcon: IconButton(
-                        tooltip: obscureApiKey
-                            ? 'Show API key'
-                            : 'Hide API key',
-                        onPressed: () {
-                          setState(() => obscureApiKey = !obscureApiKey);
-                        },
-                        icon: Icon(
-                          obscureApiKey
-                              ? Icons.visibility_rounded
-                              : Icons.visibility_off_rounded,
+          title: const Text('Manage V-Modal API key'),
+          content: SizedBox(
+            width: 440,
+            child: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Obx(() {
+                      final service = controller.apiKeyService;
+                      final expiresAt = service.expiresAt;
+                      final currentStatus =
+                          controller.vmodalService.isConfigured
+                          ? expiresAt == null
+                                ? 'Your key is encrypted on this device and saved permanently.'
+                                : 'Your key is encrypted on this device until ${DateFormat.yMMMd().add_jm().format(expiresAt.toLocal())}.'
+                          : service.credentialExpired.value
+                          ? 'Your saved API key expired. Add it again to reconnect.'
+                          : 'Enter a runtime key to authorize indexing and search.';
+                      return Text(currentStatus);
+                    }),
+                    Obx(() {
+                      if (controller.apiKeyService.restoreError.value == null) {
+                        return const SizedBox.shrink();
+                      }
+                      return const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          'The saved key could not be read securely. Re-enter it or revoke the saved key.',
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: controller.apiKeyController,
+                      autofocus: true,
+                      enabled: !isSaving,
+                      obscureText: obscureApiKey,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => saveKey(setState, dialogContext),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? 'Enter an API key to continue.'
+                          : null,
+                      decoration: InputDecoration(
+                        labelText: 'API key',
+                        hintText: 'Enter your API key',
+                        prefixIcon: const Icon(Icons.key_rounded),
+                        suffixIcon: IconButton(
+                          tooltip: obscureApiKey
+                              ? 'Show API key'
+                              : 'Hide API key',
+                          onPressed: () {
+                            setState(() => obscureApiKey = !obscureApiKey);
+                          },
+                          icon: Icon(
+                            obscureApiKey
+                                ? Icons.visibility_rounded
+                                : Icons.visibility_off_rounded,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<ApiKeyRetention>(
+                      initialValue: retention,
+                      decoration: const InputDecoration(
+                        labelText: 'Keep this key on this device',
+                        prefixIcon: Icon(Icons.schedule_rounded),
+                      ),
+                      items: ApiKeyRetention.values
+                          .map(
+                            (option) => DropdownMenuItem(
+                              value: option,
+                              child: Text(option.label),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: isSaving
+                          ? null
+                          : (value) {
+                              if (value != null) {
+                                setState(() => retention = value);
+                              }
+                            },
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer
+                            .withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline_rounded, size: 18),
+                          SizedBox(width: 9),
+                          Expanded(
+                            child: Text(
+                              'Each video is tied to the API key used to upload it. If you switch keys, you may need to upload that video again under the new key.',
+                              style: TextStyle(fontSize: 12, height: 1.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
           actions: [
+            if (controller.apiKeyService.hasSavedCredential.value)
+              TextButton(
+                onPressed: isSaving
+                    ? null
+                    : () => updateRetention(setState, dialogContext),
+                child: const Text('Update duration'),
+              ),
+            if (controller.apiKeyService.hasSavedCredential.value ||
+                controller.vmodalService.isConfigured ||
+                controller.apiKeyService.restoreError.value != null)
+              TextButton(
+                onPressed: isSaving
+                    ? null
+                    : () => revokeKey(setState, dialogContext),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                child: const Text('Revoke key'),
+              ),
             TextButton(
               onPressed: isSaving
                   ? null

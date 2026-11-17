@@ -7,6 +7,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
+import '../../../shared/widgets/app_bottom_navigation_bar.dart';
 import '../../../shared/widgets/search_result_card.dart';
 import '../controllers/search_controller.dart';
 
@@ -80,6 +81,7 @@ class SearchView extends GetView<SearchViewController> {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     return Scaffold(
+      bottomNavigationBar: const AppBottomNavigationBar(selectedIndex: 2),
       appBar: AppBar(title: const Text('Search Wildlife Footage')),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -87,6 +89,40 @@ class SearchView extends GetView<SearchViewController> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 12),
+
+            Obx(() {
+              final videos = controller.selectableVideos;
+              if (videos.isEmpty) return const SizedBox.shrink();
+              final selectedVideo = controller.currentVideo;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DropdownButtonFormField<String>(
+                  initialValue:
+                      videos.any((video) => video.id == selectedVideo?.id)
+                      ? selectedVideo?.id
+                      : null,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Search within your video library',
+                    prefixIcon: Icon(Icons.video_library_outlined),
+                  ),
+                  hint: const Text('Choose a video'),
+                  items: videos
+                      .map(
+                        (video) => DropdownMenuItem(
+                          value: video.id,
+                          child: Text(
+                            '${video.fileName} · ${video.isIndexed ? 'Indexed' : 'Not indexed'}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: controller.selectVideo,
+                ),
+              );
+            }),
 
             // Search Bar Input Container
             Card(

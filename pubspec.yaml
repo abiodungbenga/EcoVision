@@ -45,7 +45,11 @@ dependencies:
   flutter_svg: ^2.4.0
   features_tour: ^0.6.2
   adaptive_theme: ^3.8.0
+  network_internet_checker: ^1.2.0
   material_ui: ^1.11.1
+  flutter_secure_storage: ^11.2.0
+  crypto: ^3.0.8
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

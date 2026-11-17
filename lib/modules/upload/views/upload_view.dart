@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../shared/models/video_model.dart';
+import '../../../shared/widgets/app_bottom_navigation_bar.dart';
 import '../../../shared/widgets/status_indicator.dart';
 import '../controllers/upload_controller.dart';
 
@@ -15,6 +16,7 @@ class UploadView extends GetView<UploadController> {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     return Scaffold(
+      bottomNavigationBar: const AppBottomNavigationBar(selectedIndex: 1),
       appBar: AppBar(title: const Text('Upload Wildlife Footage')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -328,11 +330,17 @@ class UploadView extends GetView<UploadController> {
                           ),
                         ],
                       ),
-                    ] else if (video.status == VideoStatus.error) ...[
+                    ] else if (video.isUploaded) ...[
                       AppButton(
-                        label: 'Try Indexing Again',
+                        label: 'Continue Indexing',
                         icon: Icons.refresh_rounded,
                         onPressed: controller.reindexCurrentVideo,
+                      ),
+                    ] else if (video.status == VideoStatus.error) ...[
+                      AppButton(
+                        label: 'Retry Upload',
+                        icon: Icons.cloud_upload_rounded,
+                        onPressed: controller.startUploadAndIndex,
                       ),
                     ] else ...[
                       AppButton(
@@ -477,7 +485,7 @@ class UploadView extends GetView<UploadController> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Replace current video?'),
         content: const Text(
-          'The current video will be removed from this app so you can select and index another one. The original file on your device will not be deleted.',
+          'The current video will stay in your library so you can search it later. Select another local video to add it to the library. Your original files will not be deleted.',
         ),
         actions: [
           TextButton(

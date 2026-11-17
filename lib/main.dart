@@ -5,9 +5,14 @@ import 'package:features_tour/features_tour.dart';
 import 'app/app.dart';
 import 'app/theme/app_colors.dart';
 import 'app/theme/app_typography.dart';
+import 'core/services/api_key_service.dart';
+import 'core/services/vmodal_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final vmodalService = VModalService();
+  final apiKeyService = ApiKeyService(vmodalService: vmodalService);
+  await apiKeyService.initialize();
   FeaturesTour.setGlobalConfig(
     preferencePrefix: 'ecovision',
     preDialogConfig: PreDialogConfig(enabled: false),
@@ -77,5 +82,11 @@ Future<void> main() async {
     ),
   );
   final savedThemeMode = await AdaptiveTheme.getThemeMode();
-  runApp(EcoVisionApp(initialThemeMode: savedThemeMode));
+  runApp(
+    EcoVisionApp(
+      initialThemeMode: savedThemeMode,
+      apiKeyService: apiKeyService,
+      vmodalService: vmodalService,
+    ),
+  );
 }

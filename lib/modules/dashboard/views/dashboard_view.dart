@@ -9,6 +9,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../core/services/video_service.dart';
 import '../controllers/dashboard_controller.dart';
 import '../../../shared/models/observation_model.dart';
+import '../../../shared/widgets/app_bottom_navigation_bar.dart';
 
 class DashboardView extends GetView<DashboardController> {
   const DashboardView({super.key});
@@ -32,6 +33,7 @@ class DashboardView extends GetView<DashboardController> {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     return Scaffold(
+      bottomNavigationBar: const AppBottomNavigationBar(selectedIndex: 3),
       appBar: AppBar(title: const Text('Research Dashboard')),
       body: SafeArea(
         bottom: true,

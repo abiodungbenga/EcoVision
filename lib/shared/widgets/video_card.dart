@@ -66,6 +66,8 @@ class VideoCard extends StatelessWidget {
                           fontSize: 12,
                           color: palette.secondaryText,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -73,8 +75,11 @@ class VideoCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 StatusIndicator(status: video.status),
                 if (video.status == VideoStatus.indexed && onSearchTap != null)

@@ -9,6 +9,7 @@ import '../models/search_result_model.dart';
 import '../models/observation_model.dart';
 import '../../core/services/discovery_service.dart';
 import '../../core/services/research_service.dart';
+import '../../core/utils/snackbar_utils.dart';
 
 class SearchResultCard extends StatelessWidget {
   final SearchResultModel result;
@@ -544,35 +545,20 @@ class SearchResultCard extends StatelessWidget {
     try {
       final success = await researchService.saveObservation(observation);
       if (success) {
-        Get.snackbar(
-          'Observation saved',
+        SnackbarUtils.showSuccess(
           'Saved "$speciesName" at ${result.formattedTimestamp}.',
-          backgroundColor: palette.surfaceVariant,
-          colorText: palette.success,
-          icon: Icon(Icons.check_circle_rounded, color: palette.success),
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
+          title: 'Observation saved',
         );
       } else {
-        Get.snackbar(
-          'Already saved',
+        SnackbarUtils.showInfo(
           'This observation is already in your research records.',
-          backgroundColor: palette.surfaceVariant,
-          colorText: palette.warning,
-          icon: Icon(Icons.info_rounded, color: palette.warning),
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
+          title: 'Already saved',
         );
       }
     } catch (error) {
-      Get.snackbar(
-        'Could not save observation',
+      SnackbarUtils.showError(
         'Please try again. $error',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
+        title: 'Could not save observation',
       );
     }
   }

@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/app_exception.dart';
+import '../../../core/services/api_key_service.dart';
 import '../../../core/services/video_service.dart';
 import '../../../core/services/vmodal_service.dart';
 import '../../../core/services/research_service.dart';
@@ -17,6 +18,7 @@ import '../../../shared/models/video_model.dart';
 
 class SearchViewController extends GetxController {
   final VModalService vmodalService = Get.find<VModalService>();
+  final ApiKeyService apiKeyService = Get.find<ApiKeyService>();
   final VideoService videoService = Get.find<VideoService>();
 
   final queryTextController = TextEditingController();
@@ -32,6 +34,34 @@ class SearchViewController extends GetxController {
   final isGlobalSearch = false.obs;
 
   VideoModel? get currentVideo => videoService.currentVideo;
+  RxList<VideoModel> get videoHistory => videoService.videoHistory;
+  List<VideoModel> get selectableVideos => videoHistory
+      .where(
+        (video) =>
+            video.apiKeyProfileId == null ||
+            video.apiKeyProfileId == apiKeyService.apiKeyProfileId,
+      )
+      .toList();
+
+  Future<void> selectVideo(String? videoId) async {
+    if (videoId == null) return;
+    final video = videoService.videoHistory.firstWhereOrNull(
+      (savedVideo) =>
+          savedVideo.id == videoId &&
+          (savedVideo.apiKeyProfileId == null ||
+              savedVideo.apiKeyProfileId == apiKeyService.apiKeyProfileId),
+    );
+    if (video == null || video.id == currentVideo?.id) return;
+
+    try {
+      await videoService.setCurrentVideo(video);
+      hasSearched.value = false;
+      searchResults.clear();
+      errorMessage.value = '';
+    } catch (error) {
+      SnackbarUtils.showError('Could not select this video: $error');
+    }
+  }
 
   @override
   void onInit() {
@@ -90,7 +120,21 @@ class SearchViewController extends GetxController {
 
     final video = currentVideo;
     if (video == null) {
-      SnackbarUtils.showInfo('Please select and index a video first.');
+      SnackbarUtils.showInfo('Please select a video from your library first.');
+      return;
+    }
+    if (video.apiKeyProfileId != null &&
+        video.apiKeyProfileId != apiKeyService.apiKeyProfileId) {
+      errorMessage.value = 'This video belongs to a different API key.';
+      SnackbarUtils.showInfo(
+        'Switch back to the API key used for this video, or re-upload it with the current key.',
+      );
+      return;
+    }
+    if (!video.isIndexed) {
+      SnackbarUtils.showInfo(
+        'This video is not indexed yet. Choose an indexed video or finish indexing first.',
+      );
       return;
     }
 
@@ -154,11 +198,15 @@ class SearchViewController extends GetxController {
 
       final finalResults = <SearchResultModel>[];
       for (var result in updatedResults) {
-        final match = videoService.videoHistory.firstWhereOrNull(
-          (v) => v.fileName == result.videoFileName,
-        );
-        if (match != null) {
-          result = result.copyWith(videoPath: match.filePath);
+        if (!isGlobalSearch.value) {
+          result = result.copyWith(videoPath: video.filePath);
+        } else {
+          final match = videoService.videoHistory.firstWhereOrNull(
+            (savedVideo) => savedVideo.fileName == result.videoFileName,
+          );
+          if (match != null) {
+            result = result.copyWith(videoPath: match.filePath);
+          }
         }
         if ((result.thumbnailUrl?.trim().isEmpty ?? true) &&
             result.videoPath.isNotEmpty) {

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../shared/models/video_model.dart';
 import '../utils/snackbar_utils.dart';
+import 'api_key_service.dart';
 import 'video_service.dart';
 import 'vmodal_service.dart';
 
@@ -16,10 +17,15 @@ import 'vmodal_service.dart';
 /// screen. Because indexing takes minutes, that left the video pinned at
 /// [VideoStatus.indexing] forever and permanently blocked search.
 class IndexingService extends GetxService {
-  IndexingService({required this.vmodalService, required this.videoService});
+  IndexingService({
+    required this.vmodalService,
+    required this.videoService,
+    required this.apiKeyService,
+  });
 
   final VModalService vmodalService;
   final VideoService videoService;
+  final ApiKeyService apiKeyService;
 
   /// How often to ask the backend for job status.
   static const Duration pollInterval = Duration(seconds: 3);
@@ -76,6 +82,26 @@ class IndexingService extends GetxService {
   final isIndexing = false.obs;
 
   bool get isPolling => _timer?.isActive ?? false;
+
+  Future<void> resumePendingIndexing() async {
+    await videoService.historyLoaded;
+    if (!vmodalService.isConfigured || isIndexing.value) return;
+    final video = videoService.videoHistory.firstWhereOrNull(
+      (savedVideo) =>
+          savedVideo.status == VideoStatus.indexing &&
+          (savedVideo.apiKeyProfileId == null ||
+              savedVideo.apiKeyProfileId == apiKeyService.apiKeyProfileId) &&
+          savedVideo.indexJobId?.isNotEmpty == true,
+    );
+    if (video == null) return;
+
+    startPolling(
+      videoId: video.id,
+      jobIdToPoll: video.indexJobId!,
+      collectionName: video.collectionName,
+      streamName: video.streamName,
+    );
+  }
 
   /// Begins polling [jobIdToPoll] and reports terminal state onto [videoId].
   ///
@@ -136,7 +162,7 @@ class IndexingService extends GetxService {
     if (_jobDoneAt == null &&
         startedAt != null &&
         DateTime.now().difference(startedAt) > pollDeadline) {
-      _fail(
+      await _fail(
         videoId,
         'Indexing timed out after ${pollDeadline.inMinutes} minutes. '
         'The video may be too long to index.',
@@ -160,7 +186,7 @@ class IndexingService extends GetxService {
         _jobDoneAt ??= DateTime.now();
         await _confirmPublished(videoId, jobIdToPoll, raw);
       } else if (_failureStates.contains(state)) {
-        _fail(
+        await _fail(
           videoId,
           'Indexing failed on the V-Modal backend (status: $raw).',
         );
@@ -178,7 +204,7 @@ class IndexingService extends GetxService {
       // Tolerate transient errors, but surface a persistent one instead of
       // spinning behind "Indexing in progress..." indefinitely.
       if (_consecutiveFailures >= maxConsecutiveFailures) {
-        _fail(
+        await _fail(
           videoId,
           'Lost contact with V-Modal while indexing: ${e.toString()}',
         );
@@ -232,7 +258,7 @@ class IndexingService extends GetxService {
     // confirmation is safe now that search retries across advertised versions:
     // a still-settling index yields a retryable message, not a stuck screen.
     if (published || waited >= publishGrace) {
-      _finish(videoId, jobIdToPoll, rawStatus, confirmed: published);
+      await _finish(videoId, jobIdToPoll, rawStatus, confirmed: published);
       return;
     }
 
@@ -240,12 +266,12 @@ class IndexingService extends GetxService {
         'Indexing finished. Waiting for V-Modal to publish the search index...';
   }
 
-  void _finish(
+  Future<void> _finish(
     String videoId,
     String jobIdToPoll,
     String rawStatus, {
     required bool confirmed,
-  }) {
+  }) async {
     developer.log(
       'Indexing completed: videoId=$videoId, jobId=$jobIdToPoll, '
       'collection=$_collectionName, stream=$_streamName, '
@@ -257,10 +283,11 @@ class IndexingService extends GetxService {
         ? 'Ready to search! Indexing completed.'
         : 'Indexing completed. The search index may take another moment to '
               'become queryable.';
-    videoService.updateVideoStatus(
+    await videoService.updateVideoStatus(
       videoId,
       VideoStatus.indexed,
       jobId: jobIdToPoll,
+      isUploaded: true,
     );
     // Announced from the service, not the Upload screen, so the user still
     // hears about it if they navigated away during the long wait.
@@ -269,10 +296,14 @@ class IndexingService extends GetxService {
     );
   }
 
-  void _fail(String videoId, String message) {
+  Future<void> _fail(String videoId, String message) async {
     stopPolling();
     statusMessage.value = message;
-    videoService.updateVideoStatus(videoId, VideoStatus.error, error: message);
+    await videoService.updateVideoStatus(
+      videoId,
+      VideoStatus.error,
+      error: message,
+    );
     SnackbarUtils.showError(message);
   }
 

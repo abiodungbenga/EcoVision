@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../core/services/indexing_service.dart';
+import '../../../core/services/api_key_service.dart';
 import '../../../core/services/video_service.dart';
 import '../../../core/services/vmodal_service.dart';
 import '../../../core/utils/snackbar_utils.dart';
@@ -16,6 +17,7 @@ class UploadController extends GetxController {
   final VModalService vmodalService = Get.find<VModalService>();
   final VideoService videoService = Get.find<VideoService>();
   final IndexingService indexingService = Get.find<IndexingService>();
+  final ApiKeyService apiKeyService = Get.find<ApiKeyService>();
 
   UploadTask<VideoUploadResponse>? _uploadTask;
   StreamSubscription<UploadProgress>? _progressSub;
@@ -65,7 +67,9 @@ class UploadController extends GetxController {
         _localStatus.value = 'Selected: ${video.fileName}. Ready to upload.';
         break;
       case VideoStatus.uploading:
-        _localStatus.value = 'Uploading video footage...';
+        _localStatus.value = video.isUploaded
+            ? 'This upload is already in your library. Continue indexing without uploading again.'
+            : 'Uploading video footage...';
         break;
       case VideoStatus.indexing:
         _localStatus.value = 'Indexing video with V-Modal...';
@@ -131,13 +135,20 @@ class UploadController extends GetxController {
 
   Future<void> selectVideo() async {
     try {
-      final video = await videoService.pickVideo();
+      final video = await videoService.pickVideo(
+        apiKeyProfileId: apiKeyService.apiKeyProfileId,
+      );
       if (video != null) {
         uploadProgress.value = 0.0;
         indexingService.reset();
         _localStatus.value =
             'Selected: ${video.fileName} (${video.formattedSize})';
         await _initializePreview(video);
+        if (video.isUploaded) {
+          SnackbarUtils.showInfo(
+            'This video is already in your library. It will not be uploaded again.',
+          );
+        }
       }
     } catch (e) {
       SnackbarUtils.showError(e.toString());
@@ -156,20 +167,51 @@ class UploadController extends GetxController {
       return;
     }
 
+    final apiKeyProfileId = apiKeyService.apiKeyProfileId;
+    if (apiKeyProfileId == null) {
+      SnackbarUtils.showError(
+        'The current API key has no saved device profile. Reconnect it before uploading.',
+      );
+      return;
+    }
+    if (video.apiKeyProfileId != null &&
+        video.apiKeyProfileId != apiKeyProfileId) {
+      SnackbarUtils.showInfo(
+        'This video belongs to another API key. Select the local file again to upload it under this key.',
+      );
+      return;
+    }
+
+    if (video.isUploaded && video.apiKeyProfileId == apiKeyProfileId) {
+      if (video.status == VideoStatus.indexed) {
+        SnackbarUtils.showInfo(
+          'This video is already uploaded and indexed. Search it from your library.',
+        );
+        return;
+      }
+      await reindexCurrentVideo();
+      return;
+    }
+
+    if (isProcessing) return;
+
     final file = File(video.filePath);
     if (!file.existsSync()) {
       SnackbarUtils.showError('Video file path does not exist on disk.');
       return;
     }
 
+    var uploadCompleted = false;
     try {
       _isUploading.value = true;
       uploadProgress.value = 0.0;
       _localStatus.value = 'Uploading...';
-      videoService.updateVideoStatus(
+      await videoService.updateVideoApiKeyProfile(video.id, apiKeyProfileId);
+      await videoService.updateVideoStatus(
         video.id,
         VideoStatus.uploading,
         progress: 0.0,
+        isUploaded: true,
       );
 
       // Start V-Modal Upload. Upload, index and search must all target the
@@ -183,39 +225,54 @@ class UploadController extends GetxController {
       await _progressSub?.cancel();
       _progressSub = _uploadTask!.progress.listen((progress) {
         uploadProgress.value = progress.percent.toDouble();
-        videoService.updateVideoStatus(
-          video.id,
-          VideoStatus.uploading,
-          progress: progress.percent.toDouble(),
+        unawaited(
+          videoService.updateVideoStatus(
+            video.id,
+            VideoStatus.uploading,
+            progress: progress.percent.toDouble(),
+          ),
         );
       });
 
       // Await upload completion
       await _uploadTask!.result;
+      uploadCompleted = true;
       uploadProgress.value = 100.0;
+      await videoService.updateVideoStatus(
+        video.id,
+        VideoStatus.uploading,
+        progress: 100.0,
+        isUploaded: true,
+      );
 
       // Start Indexation
       _localStatus.value =
           'Indexing video... Submitting indexing job to V-Modal.';
-      videoService.updateVideoStatus(
+      await videoService.updateVideoStatus(
         video.id,
         VideoStatus.indexing,
         progress: 100.0,
       );
 
       await _submitIndexing(video);
+      _isUploading.value = false;
     } on OperationCanceled {
       _isUploading.value = false;
       _localStatus.value = 'Upload canceled by user.';
-      videoService.updateVideoStatus(video.id, VideoStatus.selected);
+      await videoService.updateVideoStatus(
+        video.id,
+        VideoStatus.selected,
+        isUploaded: false,
+      );
       SnackbarUtils.showInfo('Upload operation canceled.');
     } catch (e) {
       _isUploading.value = false;
       _localStatus.value = 'Upload failed: ${e.toString()}';
-      videoService.updateVideoStatus(
+      await videoService.updateVideoStatus(
         video.id,
         VideoStatus.error,
         error: e.toString(),
+        isUploaded: uploadCompleted,
       );
       SnackbarUtils.showError('Upload failed: ${e.toString()}');
     }
@@ -234,7 +291,15 @@ class UploadController extends GetxController {
       SnackbarUtils.showInfo('Please configure your V-Modal API Key first.');
       return;
     }
+    if (video.apiKeyProfileId != apiKeyService.apiKeyProfileId) {
+      await startUploadAndIndex();
+      return;
+    }
     if (isProcessing) return;
+    if (!video.isUploaded) {
+      await startUploadAndIndex();
+      return;
+    }
 
     try {
       _isUploading.value = true;
@@ -243,7 +308,7 @@ class UploadController extends GetxController {
     } catch (e) {
       _isUploading.value = false;
       _localStatus.value = 'Re-index failed: ${e.toString()}';
-      videoService.updateVideoStatus(
+      await videoService.updateVideoStatus(
         video.id,
         VideoStatus.error,
         error: e.toString(),
@@ -253,7 +318,7 @@ class UploadController extends GetxController {
   }
 
   Future<void> _submitIndexing(VideoModel video) async {
-    videoService.updateVideoStatus(
+    await videoService.updateVideoStatus(
       video.id,
       VideoStatus.indexing,
       progress: 100.0,
@@ -271,10 +336,11 @@ class UploadController extends GetxController {
     indexStatus.value = indexResponse.status.isEmpty
         ? 'queued'
         : indexResponse.status;
-    videoService.updateVideoStatus(
+    await videoService.updateVideoStatus(
       video.id,
       VideoStatus.indexing,
       jobId: indexResponse.jobId,
+      isUploaded: true,
     );
 
     // Keep polling in the permanent service so navigation does not interrupt
@@ -293,7 +359,7 @@ class UploadController extends GetxController {
     _isUploading.value = false;
   }
 
-  void removeCurrentVideo() {
+  Future<void> removeCurrentVideo() async {
     _uploadTask?.cancel();
     _progressSub?.cancel();
     _uploadTask = null;
@@ -303,7 +369,7 @@ class UploadController extends GetxController {
     indexingService.reset();
     _localStatus.value = 'Select a wildlife video to analyze.';
     _disposePreview();
-    videoService.clearCurrentVideo();
+    await videoService.clearCurrentVideo();
   }
 
   void _disposePreview() {

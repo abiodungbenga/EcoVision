@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme/app_colors.dart';
+
 class EmptyState extends StatelessWidget {
   final String title;
   final String description;
@@ -16,6 +18,7 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableHeight = constraints.maxHeight.isFinite
@@ -35,27 +38,27 @@ class EmptyState extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
+                      color: palette.primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(icon, size: 48, color: const Color(0xFF1B4D3E)),
+                    child: Icon(icon, size: 48, color: palette.primary),
                   ),
                   const SizedBox(height: 20),
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
+                      color: palette.text,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF718096),
+                      color: palette.secondaryText,
                       height: 1.4,
                     ),
                     textAlign: TextAlign.center,

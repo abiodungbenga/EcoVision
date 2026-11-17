@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../app/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../shared/models/video_model.dart';
 import '../../../shared/widgets/status_indicator.dart';
@@ -12,6 +13,7 @@ class UploadView extends GetView<UploadController> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Upload Wildlife Footage')),
       body: SingleChildScrollView(
@@ -23,15 +25,17 @@ class UploadView extends GetView<UploadController> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0FDF4),
+                color: palette.success.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFDCFCE7)),
+                border: Border.all(
+                  color: palette.success.withValues(alpha: 0.35),
+                ),
               ),
               child: Row(
-                children: const [
+                children: [
                   Icon(
                     Icons.video_collection_outlined,
-                    color: Color(0xFF16A34A),
+                    color: palette.success,
                     size: 28,
                   ),
                   SizedBox(width: 14),
@@ -40,7 +44,7 @@ class UploadView extends GetView<UploadController> {
                       'Select a wildlife or environmental video to upload to V-Modal for multimodal indexing.',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF15803D),
+                        color: palette.success,
                         height: 1.4,
                       ),
                     ),
@@ -56,9 +60,9 @@ class UploadView extends GetView<UploadController> {
               return Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: palette.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: palette.divider),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.03),
@@ -70,12 +74,12 @@ class UploadView extends GetView<UploadController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Selected File',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF64748B),
+                        color: palette.secondaryText,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -84,17 +88,17 @@ class UploadView extends GetView<UploadController> {
                       Center(
                         child: Column(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.folder_open_rounded,
                               size: 48,
-                              color: Color(0xFFCBD5E1),
+                              color: palette.secondaryText,
                             ),
                             const SizedBox(height: 10),
-                            const Text(
+                            Text(
                               'No video selected',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFF94A3B8),
+                                color: palette.secondaryText,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -114,13 +118,12 @@ class UploadView extends GetView<UploadController> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1B4D3E)
-                                  .withValues(alpha: 0.1),
+                              color: palette.primary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.movie_creation_outlined,
-                              color: Color(0xFF1B4D3E),
+                              color: palette.primary,
                               size: 26,
                             ),
                           ),
@@ -131,10 +134,10 @@ class UploadView extends GetView<UploadController> {
                               children: [
                                 Text(
                                   video.fileName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E293B),
+                                    color: palette.text,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -142,9 +145,9 @@ class UploadView extends GetView<UploadController> {
                                 const SizedBox(height: 4),
                                 Text(
                                   '${video.formattedSize} • ${video.collectionName}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: Color(0xFF64748B),
+                                    color: palette.secondaryText,
                                   ),
                                 ),
                               ],
@@ -175,7 +178,7 @@ class UploadView extends GetView<UploadController> {
                       ),
                       const SizedBox(height: 16),
 
-                      _buildVideoPreview(),
+                      _buildVideoPreview(context),
                       const SizedBox(height: 16),
                     ],
                   ],
@@ -192,19 +195,19 @@ class UploadView extends GetView<UploadController> {
               return Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: palette.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: palette.divider),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Upload & Index Status',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
+                        color: palette.text,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -212,10 +215,10 @@ class UploadView extends GetView<UploadController> {
                     // Progress message banner
                     Text(
                       controller.statusMessage,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF334155),
+                        color: palette.text,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -226,19 +229,19 @@ class UploadView extends GetView<UploadController> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Upload Progress',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF64748B),
+                              color: palette.secondaryText,
                             ),
                           ),
                           Text(
                             '${controller.uploadProgress.value.toStringAsFixed(0)}%',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1B4D3E),
+                              color: palette.primary,
                             ),
                           ),
                         ],
@@ -248,9 +251,9 @@ class UploadView extends GetView<UploadController> {
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: controller.uploadProgress.value / 100,
-                          backgroundColor: const Color(0xFFE2E8F0),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFF1B4D3E),
+                          backgroundColor: palette.surfaceVariant,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            palette.primary,
                           ),
                           minHeight: 8,
                         ),
@@ -263,9 +266,9 @@ class UploadView extends GetView<UploadController> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
+                          color: palette.surfaceVariant,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(color: palette.divider),
                         ),
                         child: Wrap(
                           alignment: WrapAlignment.spaceBetween,
@@ -282,10 +285,10 @@ class UploadView extends GetView<UploadController> {
                             ),
                             Text(
                               'Status: ${controller.indexStatus.value}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1B4D3E),
+                                color: palette.primary,
                               ),
                             ),
                           ],
@@ -349,27 +352,25 @@ class UploadView extends GetView<UploadController> {
     );
   }
 
-  Widget _buildVideoPreview() {
+  Widget _buildVideoPreview(BuildContext context) {
+    final palette = AppPalette.of(context);
     return Obx(() {
       if (controller.previewError.value.isNotEmpty) {
         return Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF7ED),
+            color: palette.warning.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFFED7AA)),
+            border: Border.all(color: palette.warning.withValues(alpha: 0.35)),
           ),
           child: Row(
             children: [
-              const Icon(Icons.warning_amber_rounded, color: Color(0xFFC2410C)),
+              Icon(Icons.warning_amber_rounded, color: palette.warning),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   controller.previewError.value,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF9A3412),
-                  ),
+                  style: TextStyle(fontSize: 12, color: palette.warning),
                 ),
               ),
             ],
@@ -382,9 +383,9 @@ class UploadView extends GetView<UploadController> {
         return Container(
           height: 180,
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
+            color: palette.surfaceVariant,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: palette.divider),
           ),
           child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         );
@@ -435,10 +436,10 @@ class UploadView extends GetView<UploadController> {
               player,
               allowScrubbing: true,
               padding: const EdgeInsets.symmetric(vertical: 6),
-              colors: const VideoProgressColors(
-                playedColor: Color(0xFF81C784),
-                bufferedColor: Color(0xFF64748B),
-                backgroundColor: Color(0xFF334155),
+              colors: VideoProgressColors(
+                playedColor: palette.success,
+                bufferedColor: palette.secondaryText,
+                backgroundColor: palette.divider,
               ),
             ),
             SizedBox(
@@ -454,7 +455,7 @@ class UploadView extends GetView<UploadController> {
                       controller.isPreviewPlaying.value
                           ? Icons.pause_rounded
                           : Icons.play_arrow_rounded,
-                      color: Colors.white,
+                      color: palette.onPrimary,
                     ),
                   ),
                   const Text(

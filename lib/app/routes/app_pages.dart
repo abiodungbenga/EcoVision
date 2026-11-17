@@ -10,12 +10,14 @@ import '../../modules/player/bindings/player_binding.dart';
 import '../../modules/player/views/player_view.dart';
 import '../../modules/dashboard/bindings/dashboard_binding.dart';
 import '../../modules/dashboard/views/dashboard_view.dart';
+import '../../modules/splash/views/splash_view.dart';
 import 'app_routes.dart';
 
 class AppPages {
-  static const initial = AppRoutes.home;
+  static const initial = AppRoutes.splash;
 
   static final routes = [
+    GetPage(name: AppRoutes.splash, page: () => const SplashView()),
     GetPage(
       name: AppRoutes.home,
       page: () => const HomeView(),

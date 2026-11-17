@@ -21,7 +21,7 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primaryColor = backgroundColor ?? const Color(0xFF1B4D3E); // Deep Forest Green
+    final primaryColor = backgroundColor ?? theme.colorScheme.primary;
 
     if (isSecondary) {
       return OutlinedButton(
@@ -29,7 +29,9 @@ class AppButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: primaryColor, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         child: _buildChild(theme, primaryColor),
       );
@@ -41,8 +43,8 @@ class AppButton extends StatelessWidget {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 0,
       ),
       child: _buildChild(theme, Colors.white),
     );

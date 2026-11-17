@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:get/get.dart';
 
+import '../../../app/theme/app_colors.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/services/video_service.dart';
 import '../controllers/dashboard_controller.dart';
@@ -29,6 +30,7 @@ class DashboardView extends GetView<DashboardController> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Research Dashboard')),
       body: SafeArea(
@@ -41,19 +43,16 @@ class DashboardView extends GetView<DashboardController> {
               Obx(
                 () => Text(
                   controller.greeting.value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF64748B),
-                  ),
+                  style: TextStyle(fontSize: 14, color: palette.secondaryText),
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Your Environmental Research Overview',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: palette.text,
                 ),
               ),
               const SizedBox(height: 16),
@@ -69,25 +68,28 @@ class DashboardView extends GetView<DashboardController> {
                   childAspectRatio: 1.4,
                   children: [
                     _buildStatCard(
+                      context,
                       '${controller.videosAnalyzed.value}',
                       'Videos analyzed',
                       Icons.video_library_rounded,
-                      const Color(0xFFEBF8FF),
-                      const Color(0xFF2B6CB0),
+                      palette.surfaceVariant,
+                      palette.info,
                     ),
                     _buildStatCard(
+                      context,
                       '${controller.observationCount.value}',
                       'Observations saved',
                       Icons.science_rounded,
-                      const Color(0xFFF0FDF4),
-                      const Color(0xFF16A34A),
+                      palette.surfaceVariant,
+                      palette.success,
                     ),
                     _buildStatCard(
+                      context,
                       '${controller.monthlySearchCount.value}',
                       'Searches this month',
                       Icons.search_rounded,
-                      const Color(0xFFFFFBEB),
-                      const Color(0xFFD97706),
+                      palette.surfaceVariant,
+                      palette.warning,
                     ),
                   ],
                 ),
@@ -95,18 +97,21 @@ class DashboardView extends GetView<DashboardController> {
               const SizedBox(height: 24),
 
               // Recent Observations Section
-              const Text(
+              Text(
                 'Recent Observations',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: palette.text,
                 ),
               ),
               const SizedBox(height: 10),
               Obx(() {
                 if (controller.recentObservations.isEmpty) {
-                  return _buildEmptySection('No recent observations saved.');
+                  return _buildEmptySection(
+                    context,
+                    'No recent observations saved.',
+                  );
                 }
                 return Column(
                   children: controller.recentObservations
@@ -123,18 +128,20 @@ class DashboardView extends GetView<DashboardController> {
   }
 
   Widget _buildStatCard(
+    BuildContext context,
     String val,
     String title,
     IconData icon,
     Color bgColor,
     Color iconColor,
   ) {
+    final palette = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: palette.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,10 +152,10 @@ class DashboardView extends GetView<DashboardController> {
             children: [
               Text(
                 val,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: palette.text,
                 ),
               ),
               Container(
@@ -163,10 +170,10 @@ class DashboardView extends GetView<DashboardController> {
           ),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B),
+              color: palette.secondaryText,
             ),
           ),
         ],
@@ -178,13 +185,16 @@ class DashboardView extends GetView<DashboardController> {
     BuildContext context,
     ObservationModel obs,
   ) {
+    final palette = AppPalette.of(context);
     void openPlayer() {
       var path = obs.videoPath;
       if (path.isEmpty) {
         final videoService = Get.find<VideoService>();
-        final match = videoService.videoHistory.firstWhereOrNull(
-          (v) => v.fileName == obs.videoName,
-        ) ?? videoService.currentVideo;
+        final match =
+            videoService.videoHistory.firstWhereOrNull(
+              (v) => v.fileName == obs.videoName,
+            ) ??
+            videoService.currentVideo;
         if (match != null) {
           path = match.filePath;
         }
@@ -218,30 +228,34 @@ class DashboardView extends GetView<DashboardController> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Container(
-                color: const Color(0xFFF1F5F9),
+                color: palette.surfaceVariant,
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: obs.thumbnailUrl == null || obs.thumbnailUrl!.isEmpty
-                          ? const Icon(Icons.movie_rounded, color: Color(0xFF94A3B8))
+                      child:
+                          obs.thumbnailUrl == null || obs.thumbnailUrl!.isEmpty
+                          ? Icon(
+                              Icons.movie_rounded,
+                              color: palette.secondaryText,
+                            )
                           : Image(
                               image: obs.thumbnailUrl!.startsWith('http')
                                   ? NetworkImage(obs.thumbnailUrl!)
                                   : FileImage(File(obs.thumbnailUrl!)),
                               fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const Icon(
+                              errorBuilder: (_, _, _) => Icon(
                                 Icons.movie_rounded,
-                                color: Color(0xFF94A3B8),
+                                color: palette.secondaryText,
                               ),
                             ),
                     ),
                     Positioned.fill(
                       child: Container(
                         color: Colors.black26,
-                        child: const Center(
+                        child: Center(
                           child: Icon(
                             Icons.play_circle_fill_rounded,
-                            color: Colors.white,
+                            color: palette.onPrimary,
                             size: 22,
                           ),
                         ),
@@ -255,15 +269,15 @@ class DashboardView extends GetView<DashboardController> {
         ),
         title: Text(
           obs.species,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
-            color: Color(0xFF1B4D3E),
+            color: palette.primary,
           ),
         ),
         subtitle: Text(
           '${obs.formattedTimestamp} • ${obs.videoName.isNotEmpty ? obs.videoName : "Video"}',
-          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          style: TextStyle(fontSize: 12, color: palette.secondaryText),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -272,12 +286,12 @@ class DashboardView extends GetView<DashboardController> {
           children: [
             Text(
               _formatTimeAgo(obs.createdAt),
-              style: const TextStyle(fontSize: 11, color: Color(0xFFA0AEC0)),
+              style: TextStyle(fontSize: 11, color: palette.secondaryText),
             ),
             const SizedBox(width: 6),
-            const Icon(
+            Icon(
               Icons.play_circle_outline_rounded,
-              color: Color(0xFF1B4D3E),
+              color: palette.primary,
               size: 22,
             ),
           ],
@@ -287,18 +301,19 @@ class DashboardView extends GetView<DashboardController> {
     );
   }
 
-  Widget _buildEmptySection(String text) {
+  Widget _buildEmptySection(BuildContext context, String text) {
+    final palette = AppPalette.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: palette.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: palette.divider),
       ),
       child: Center(
         child: Text(
           text,
-          style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+          style: TextStyle(fontSize: 13, color: palette.secondaryText),
         ),
       ),
     );

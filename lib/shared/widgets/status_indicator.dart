@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
+
+import '../../app/theme/app_colors.dart';
 import '../models/video_model.dart';
 
 class StatusIndicator extends StatelessWidget {
   final VideoStatus status;
   final String? customText;
 
-  const StatusIndicator({
-    super.key,
-    required this.status,
-    this.customText,
-  });
+  const StatusIndicator({super.key, required this.status, this.customText});
 
   @override
   Widget build(BuildContext context) {
-    final config = _getConfig();
+    final config = _getConfig(AppPalette.of(context));
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -50,57 +48,57 @@ class StatusIndicator extends StatelessWidget {
     );
   }
 
-  _StatusConfig _getConfig() {
+  _StatusConfig _getConfig(AppPalette palette) {
     switch (status) {
       case VideoStatus.idle:
         return _StatusConfig(
           label: 'Idle',
           icon: Icons.hourglass_empty_rounded,
-          backgroundColor: const Color(0xFFF7FAFC),
-          borderColor: const Color(0xFFE2E8F0),
-          textColor: const Color(0xFF718096),
+          backgroundColor: palette.surfaceVariant,
+          borderColor: palette.divider,
+          textColor: palette.secondaryText,
         );
       case VideoStatus.selected:
         return _StatusConfig(
           label: 'Ready to Upload',
           icon: Icons.file_present_rounded,
-          backgroundColor: const Color(0xFFEBF8FF),
-          borderColor: const Color(0xFFBEE3F8),
-          textColor: const Color(0xFF2B6CB0),
+          backgroundColor: palette.info.withValues(alpha: 0.12),
+          borderColor: palette.info.withValues(alpha: 0.35),
+          textColor: palette.info,
         );
       case VideoStatus.uploading:
         return _StatusConfig(
           label: 'Uploading...',
           icon: Icons.cloud_upload_outlined,
           isLoading: true,
-          backgroundColor: const Color(0xFFFEFCBF),
-          borderColor: const Color(0xFFFAF089),
-          textColor: const Color(0xFFB7791F),
+          backgroundColor: palette.warning.withValues(alpha: 0.14),
+          borderColor: palette.warning.withValues(alpha: 0.4),
+          textColor: palette.warning,
         );
       case VideoStatus.indexing:
         return _StatusConfig(
           label: 'Indexing Video...',
           icon: Icons.sync_rounded,
           isLoading: true,
-          backgroundColor: const Color(0xFFEBF8FF),
-          borderColor: const Color(0xFF90CDF4),
-          textColor: const Color(0xFF2C5282),
+          backgroundColor: palette.info.withValues(alpha: 0.12),
+          borderColor: palette.info.withValues(alpha: 0.35),
+          textColor: palette.info,
         );
       case VideoStatus.indexed:
         return _StatusConfig(
           label: 'Ready to Search',
           icon: Icons.check_circle_outline_rounded,
-          backgroundColor: const Color(0xFFC6F6D5),
-          borderColor: const Color(0xFF9AE6B4),
-          textColor: const Color(0xFF22543D),
+          backgroundColor: palette.success.withValues(alpha: 0.14),
+          borderColor: palette.success.withValues(alpha: 0.4),
+          textColor: palette.success,
         );
       case VideoStatus.error:
         return _StatusConfig(
           label: 'Failed',
           icon: Icons.error_outline_rounded,
-          backgroundColor: const Color(0xFFFED7D7),
-          borderColor: const Color(0xFFFEB2B2),
-          textColor: const Color(0xFF9B2C2C),
+          backgroundColor: palette.error.withValues(alpha: 0.14),
+          borderColor: palette.error.withValues(alpha: 0.4),
+          textColor: palette.error,
         );
     }
   }

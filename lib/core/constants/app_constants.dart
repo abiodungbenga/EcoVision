@@ -1,6 +1,7 @@
 class AppConstants {
   static const String appName = 'EcoVision';
-  static const String appTagline = 'Environmental Footage & Multimodal Video Search';
+  static const String appTagline =
+      'Environmental Footage & Multimodal Video Search';
 
   // Default V-Modal scope settings
   static const String defaultProjectId = 'ecovision';
@@ -14,10 +15,13 @@ class AppConstants {
 
   // Research-themed semantic chips
   static const List<Map<String, String>> semanticChips = [
-    {'label': '🐾 Predation', 'query': 'hunting predation animal attack'},
-    {'label': '💧 Drinking', 'query': 'animal drinking water'},
-    {'label': '👤 Human Intrusion', 'query': 'people walking human presence'},
-    {'label': '🌙 Nocturnal', 'query': 'animals at night low light'},
-    {'label': '🐘 Herd Activity', 'query': 'group of animals herd social interaction'},
+    {'label': 'Predation', 'query': 'hunting predation animal attack'},
+    {'label': 'At the water', 'query': 'animal drinking water'},
+    {'label': 'Human presence', 'query': 'people walking human presence'},
+    {'label': 'After dark', 'query': 'animals at night low light'},
+    {
+      'label': 'Herd activity',
+      'query': 'group of animals herd social interaction',
+    },
   ];
 }

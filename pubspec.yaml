@@ -38,11 +38,14 @@ dependencies:
   vmodal_sdk_flutter: ^1.2.3
   video_player: ^2.8.1
   file_picker: ^12.1.0
-  google_fonts: ^6.1.0
-  intl: ^0.19.0
+  intl: 0.20.3
   localstore: ^1.4.0
   video_snapshot_generator: ^0.1.1
   easy_image_viewer: ^1.5.1
+  flutter_svg: ^2.4.0
+  features_tour: ^0.6.2
+  adaptive_theme: ^3.8.0
+  material_ui: ^1.11.1
 
 dev_dependencies:
   flutter_test:
@@ -54,6 +57,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  shared_preferences: 2.5.6
+  shared_preferences_platform_interface: ^2.4.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -95,3 +100,23 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+  assets:
+    - assets/svgs/
+
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Manrope-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Manrope-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Manrope-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Manrope-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Manrope-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Manrope-ExtraBold.ttf
+          weight: 800

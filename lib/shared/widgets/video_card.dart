@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../app/theme/app_colors.dart';
 import '../models/video_model.dart';
 import 'status_indicator.dart';
 
@@ -18,6 +20,7 @@ class VideoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -32,12 +35,12 @@ class VideoCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1B4D3E).withValues(alpha: 0.1),
+                    color: palette.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.video_file_rounded,
-                    color: Color(0xFF1B4D3E),
+                    color: palette.primary,
                     size: 28,
                   ),
                 ),
@@ -48,10 +51,10 @@ class VideoCard extends StatelessWidget {
                     children: [
                       Text(
                         video.fileName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          color: Color(0xFF2D3748),
+                          color: palette.text,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -59,9 +62,9 @@ class VideoCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Size: ${video.formattedSize} • Collection: ${video.collectionName}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF718096),
+                          color: palette.secondaryText,
                         ),
                       ),
                     ],
@@ -80,22 +83,33 @@ class VideoCard extends StatelessWidget {
                     icon: const Icon(Icons.search, size: 16),
                     label: const Text('Search'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1B4D3E),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      backgroundColor: palette.primary,
+                      foregroundColor: palette.onPrimary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   )
-                else if (video.status == VideoStatus.selected && onUploadTap != null)
+                else if (video.status == VideoStatus.selected &&
+                    onUploadTap != null)
                   ElevatedButton.icon(
                     onPressed: onUploadTap,
                     icon: const Icon(Icons.cloud_upload_outlined, size: 16),
                     label: const Text('Upload & Index'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2B6CB0),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      backgroundColor: palette.info,
+                      foregroundColor: palette.onPrimary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
               ],
@@ -106,8 +120,8 @@ class VideoCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: video.uploadProgress / 100,
-                  backgroundColor: const Color(0xFFEDF2F7),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1B4D3E)),
+                  backgroundColor: palette.surfaceVariant,
+                  valueColor: AlwaysStoppedAnimation<Color>(palette.primary),
                   minHeight: 6,
                 ),
               ),

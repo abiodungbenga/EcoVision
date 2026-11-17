@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/theme/app_colors.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/widgets/app_button.dart';
@@ -12,32 +13,36 @@ import '../controllers/search_controller.dart';
 class SearchView extends GetView<SearchViewController> {
   const SearchView({super.key});
 
-  Widget _buildSearchControls() {
+  Widget _buildSearchControls(BuildContext context) {
+    final palette = AppPalette.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Research Filters:',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF64748B),
+                color: palette.secondaryText,
               ),
             ),
             Obx(
               () => Row(
                 children: [
-                  const Text(
+                  Text(
                     'Global Archive',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: palette.secondaryText,
+                    ),
                   ),
                   Switch.adaptive(
                     value: controller.isGlobalSearch.value,
                     onChanged: (v) => controller.isGlobalSearch.value = v,
-                    activeTrackColor: const Color(0xFF1B4D3E),
+                    activeTrackColor: palette.primary,
                   ),
                 ],
               ),
@@ -54,13 +59,10 @@ class SearchView extends GetView<SearchViewController> {
                 child: ActionChip(
                   label: Text(
                     chip['label']!,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF1E293B),
-                    ),
+                    style: TextStyle(fontSize: 12, color: palette.text),
                   ),
-                  backgroundColor: const Color(0xFFF1F5F9),
-                  side: const BorderSide(color: Color(0xFFE2E8F0)),
+                  backgroundColor: palette.surfaceVariant,
+                  side: BorderSide(color: palette.divider),
                   onPressed: () {
                     controller.queryTextController.text = chip['query']!;
                     controller.performSearch();
@@ -76,6 +78,7 @@ class SearchView extends GetView<SearchViewController> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Search Wildlife Footage')),
       body: Padding(
@@ -156,7 +159,7 @@ class SearchView extends GetView<SearchViewController> {
                       icon: const Icon(Icons.add_a_photo_rounded),
                       tooltip: 'Add visual reference',
                       onPressed: controller.pickReferenceImage,
-                      color: const Color(0xFF1B4D3E),
+                      color: palette.primary,
                     );
 
                     final searchButton = Obx(
@@ -172,9 +175,9 @@ class SearchView extends GetView<SearchViewController> {
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.search_rounded,
-                                color: Color(0xFF1B4D3E),
+                                color: palette.primary,
                                 size: 24,
                               ),
                               const SizedBox(width: 10),
@@ -191,9 +194,9 @@ class SearchView extends GetView<SearchViewController> {
 
                     return Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.search_rounded,
-                          color: Color(0xFF1B4D3E),
+                          color: palette.primary,
                           size: 24,
                         ),
                         const SizedBox(width: 10),
@@ -211,7 +214,7 @@ class SearchView extends GetView<SearchViewController> {
             const SizedBox(height: 14),
 
             // Global Archive Search Toggle & Semantic Chips
-            _buildSearchControls(),
+            _buildSearchControls(context),
 
             const SizedBox(height: 16),
 
@@ -222,10 +225,10 @@ class SearchView extends GetView<SearchViewController> {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         CircularProgressIndicator(
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF1B4D3E),
+                            palette.primary,
                           ),
                         ),
                         SizedBox(height: 16),
@@ -234,7 +237,7 @@ class SearchView extends GetView<SearchViewController> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF334155),
+                            color: palette.text,
                           ),
                         ),
                         SizedBox(height: 6),
@@ -242,7 +245,7 @@ class SearchView extends GetView<SearchViewController> {
                           'Analyzing video moments, visible text & speech...',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF64748B),
+                            color: palette.secondaryText,
                           ),
                         ),
                       ],
@@ -294,10 +297,10 @@ class SearchView extends GetView<SearchViewController> {
                             constraints: const BoxConstraints(maxWidth: 500),
                             child: Text(
                               'Results for "${controller.activeQuery.value}"',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E293B),
+                                color: palette.text,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -305,9 +308,9 @@ class SearchView extends GetView<SearchViewController> {
                           ),
                           Text(
                             '${controller.searchResults.length} moments found (${controller.executionTimeMs.value.round()} ms)',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF64748B),
+                              color: palette.secondaryText,
                             ),
                           ),
                         ],

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:get/get.dart';
 
+import '../../app/theme/app_colors.dart';
 import '../models/search_result_model.dart';
 import '../models/observation_model.dart';
 import '../../core/services/discovery_service.dart';
@@ -19,20 +20,21 @@ class SearchResultCard extends StatelessWidget {
     required this.onTap,
   });
 
-  Widget _buildThumbnail() {
+  Widget _buildThumbnail(BuildContext context) {
+    final palette = AppPalette.of(context);
     final url = result.thumbnailUrl;
     if (url == null || url.isEmpty) {
       return Container(
         width: 80,
         height: 80,
         decoration: BoxDecoration(
-          color: const Color(0xFFF7FAFC),
+          color: palette.surfaceVariant,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: palette.divider),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.image_not_supported_rounded,
-          color: Color(0xFFA0AEC0),
+          color: palette.secondaryText,
           size: 24,
         ),
       );
@@ -44,7 +46,7 @@ class SearchResultCard extends StatelessWidget {
       width: 80,
       height: 80,
       decoration: BoxDecoration(
-        color: const Color(0xFFEDF2F7),
+        color: palette.surfaceVariant,
         borderRadius: BorderRadius.circular(10),
       ),
       clipBehavior: Clip.antiAlias,
@@ -96,6 +98,7 @@ class SearchResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     final discoveryService = Get.find<DiscoveryService>();
     return Card(
       elevation: 2,
@@ -109,7 +112,7 @@ class SearchResultCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildThumbnail(),
+              _buildThumbnail(context),
               const SizedBox(width: 12),
 
               // Title and metadata details
@@ -119,10 +122,10 @@ class SearchResultCard extends StatelessWidget {
                   children: [
                     Text(
                       result.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D3748),
+                        color: palette.text,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -131,9 +134,9 @@ class SearchResultCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         result.description,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF718096),
+                          color: palette.secondaryText,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -148,7 +151,7 @@ class SearchResultCard extends StatelessWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1B4D3E),
+                            color: palette.primary,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
@@ -162,10 +165,10 @@ class SearchResultCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 result.formattedTimestamp,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: palette.onPrimary,
                                 ),
                               ),
                             ],
@@ -179,18 +182,18 @@ class SearchResultCard extends StatelessWidget {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEBF8FF),
+                              color: palette.info.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: const Color(0xFFBEE3F8),
+                                color: palette.info.withValues(alpha: 0.35),
                               ),
                             ),
                             child: Text(
                               'Match: ${result.scoreText}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF2B6CB0),
+                                color: palette.info,
                               ),
                             ),
                           ),
@@ -199,9 +202,9 @@ class SearchResultCard extends StatelessWidget {
                         Flexible(
                           child: Text(
                             result.videoFileName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFFA0AEC0),
+                              color: palette.secondaryText,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -212,13 +215,10 @@ class SearchResultCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     OutlinedButton.icon(
                       icon: const Icon(Icons.bookmark_add_rounded, size: 14),
-                      label: const Text(
-                        'Save Observation',
-                        style: TextStyle(fontSize: 11),
-                      ),
+                      label: const Text('Save observation'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF1B4D3E),
-                        side: const BorderSide(color: Color(0xFF1B4D3E)),
+                        foregroundColor: palette.primary,
+                        side: BorderSide(color: palette.primary),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 4,
@@ -226,7 +226,7 @@ class SearchResultCard extends StatelessWidget {
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      onPressed: () => _showSaveObservationDialog(context),
+                      onPressed: () => _showSaveObservationSheet(context),
                     ),
                   ],
                 ),
@@ -243,7 +243,7 @@ class SearchResultCard extends StatelessWidget {
                         discoveryService.isBookmarked(result)
                             ? Icons.bookmark_rounded
                             : Icons.bookmark_border_rounded,
-                        color: const Color(0xFF1B4D3E),
+                        color: palette.primary,
                         size: 20,
                       ),
                       onPressed: () => discoveryService.toggleBookmark(result),
@@ -252,14 +252,14 @@ class SearchResultCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF7FAFC),
+                      color: palette.surfaceVariant,
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: palette.divider),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 14,
-                      color: Color(0xFF1B4D3E),
+                      color: palette.primary,
                     ),
                   ),
                 ],
@@ -271,7 +271,8 @@ class SearchResultCard extends StatelessWidget {
     );
   }
 
-  Future<void> _showSaveObservationDialog(BuildContext context) async {
+  Future<void> _showSaveObservationSheet(BuildContext context) async {
+    final palette = AppPalette.of(context);
     String guessedSpecies = 'Wildlife';
     final queryLower = result.query.toLowerCase();
     if (queryLower.contains('elephant')) {
@@ -304,184 +305,216 @@ class SearchResultCard extends StatelessWidget {
       'Human',
     ];
 
-    final shouldSave = await showDialog<bool>(
+    final shouldSave = await showModalBottomSheet<bool>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
         builder: (context, setState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+          return Container(
+            decoration: BoxDecoration(
+              color: palette.surface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            contentPadding: const EdgeInsets.all(20),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1B4D3E).withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.bookmark_add_rounded,
-                    color: Color(0xFF1B4D3E),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                12,
+                20,
+                20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+              ),
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'Save Field Observation',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E293B),
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: palette.divider,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
                       ),
-                      Text(
-                        'Record timestamped finding',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF64748B),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: palette.surfaceVariant,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.bookmark_add_outlined,
+                              color: palette.primary,
+                              size: 21,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Save observation',
+                                  style: TextStyle(
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.4,
+                                    color: palette.text,
+                                  ),
+                                ),
+                                SizedBox(height: 3),
+                                Text(
+                                  'Add a species and optional field notes.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: palette.secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Close',
+                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 11,
                         ),
+                        decoration: BoxDecoration(
+                          color: palette.surfaceVariant,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.play_circle_outline_rounded,
+                              color: palette.primary,
+                              size: 19,
+                            ),
+                            const SizedBox(width: 9),
+                            Expanded(
+                              child: Text(
+                                '${result.formattedTimestamp}  ·  ${result.videoFileName}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: palette.secondaryText,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Species',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: palette.secondaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: suggestions.map((species) {
+                            final selected =
+                                speciesController.text.trim().toLowerCase() ==
+                                species.toLowerCase();
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 7),
+                              child: ChoiceChip(
+                                label: Text(species),
+                                selected: selected,
+                                showCheckmark: false,
+                                selectedColor: palette.surfaceVariant,
+                                side: BorderSide(
+                                  color: selected
+                                      ? palette.primary
+                                      : palette.divider,
+                                ),
+                                labelStyle: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: selected
+                                      ? palette.primary
+                                      : palette.secondaryText,
+                                ),
+                                onSelected: (_) {
+                                  setState(() {
+                                    speciesController.text = species;
+                                  });
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 11),
+                      TextFormField(
+                        controller: speciesController,
+                        textCapitalization: TextCapitalization.words,
+                        onChanged: (_) => setState(() {}),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Enter a species or animal category.'
+                            : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Species or animal category',
+                          hintText: 'e.g. Elephant, Bird, Lion',
+                          prefixIcon: Icon(Icons.pets_outlined, size: 20),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: notesController,
+                        minLines: 2,
+                        maxLines: 3,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          labelText: 'Field notes (optional)',
+                          hintText: 'Add a detail you want to remember',
+                          prefixIcon: Icon(Icons.notes_outlined, size: 20),
+                          alignLabelWithHint: true,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      FilledButton.icon(
+                        icon: const Icon(Icons.bookmark_add_outlined, size: 19),
+                        label: const Text('Save to observations'),
+                        onPressed: () {
+                          if (!formKey.currentState!.validate()) return;
+                          Navigator.of(sheetContext).pop(true);
+                        },
+                      ),
+                      const SizedBox(height: 4),
+                      TextButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        child: const Text('Not now'),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-            content: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.play_circle_fill_rounded,
-                            color: Color(0xFF1B4D3E),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '@ ${result.formattedTimestamp} in ${result.videoFileName}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF334155),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'Quick Species Suggestions:',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: suggestions.map((s) {
-                          final isSelected =
-                              speciesController.text.trim().toLowerCase() ==
-                              s.toLowerCase();
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: ChoiceChip(
-                              label: Text(s),
-                              selected: isSelected,
-                              selectedColor: const Color(0xFF1B4D3E),
-                              labelStyle: TextStyle(
-                                fontSize: 11,
-                                color: isSelected
-                                    ? Colors.white
-                                    : const Color(0xFF334155),
-                              ),
-                              onSelected: (_) {
-                                setState(() {
-                                  speciesController.text = s;
-                                });
-                              },
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: speciesController,
-                      textCapitalization: TextCapitalization.words,
-                      onChanged: (_) => setState(() {}),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty
-                          ? 'Enter a species or animal category.'
-                          : null,
-                      decoration: const InputDecoration(
-                        labelText: 'Species / Animal Category',
-                        hintText: 'e.g. Elephant, Bird, Lion',
-                        prefixIcon: Icon(Icons.pets_rounded, size: 20),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: notesController,
-                      maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Field Notes (optional)',
-                        hintText: 'e.g. Observed near the water source',
-                        prefixIcon: Icon(Icons.notes_rounded, size: 20),
-                        alignLabelWithHint: true,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
-            actionsPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.check_rounded, size: 18),
-                label: const Text('Save Record'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B4D3E),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed: () {
-                  if (!formKey.currentState!.validate()) return;
-                  Navigator.pop(dialogContext, true);
-                },
-              ),
-            ],
           );
         },
       ),
@@ -514,12 +547,9 @@ class SearchResultCard extends StatelessWidget {
         Get.snackbar(
           'Observation saved',
           'Saved "$speciesName" at ${result.formattedTimestamp}.',
-          backgroundColor: const Color(0xFFF0FDF4),
-          colorText: const Color(0xFF15803D),
-          icon: const Icon(
-            Icons.check_circle_rounded,
-            color: Color(0xFF15803D),
-          ),
+          backgroundColor: palette.surfaceVariant,
+          colorText: palette.success,
+          icon: Icon(Icons.check_circle_rounded, color: palette.success),
           snackPosition: SnackPosition.BOTTOM,
           margin: const EdgeInsets.all(16),
           borderRadius: 12,
@@ -528,9 +558,9 @@ class SearchResultCard extends StatelessWidget {
         Get.snackbar(
           'Already saved',
           'This observation is already in your research records.',
-          backgroundColor: const Color(0xFFFFFBEB),
-          colorText: const Color(0xFFB45309),
-          icon: const Icon(Icons.info_rounded, color: Color(0xFFB45309)),
+          backgroundColor: palette.surfaceVariant,
+          colorText: palette.warning,
+          icon: Icon(Icons.info_rounded, color: palette.warning),
           snackPosition: SnackPosition.BOTTOM,
           margin: const EdgeInsets.all(16),
           borderRadius: 12,

@@ -1,20 +1,111 @@
-import 'package:flutter/material.dart';
-
 import 'dart:io';
 
+import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:features_tour/features_tour.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
+import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/video_card.dart';
 import '../../../shared/models/search_result_model.dart';
 import '../controllers/home_controller.dart';
 
-class HomeView extends GetView<HomeController> {
+class HomeView extends StatefulWidget {
   const HomeView({super.key});
 
-  Widget _buildDiscoverySection() {
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  final HomeController controller = Get.find<HomeController>();
+  final FeaturesTourController _tourController = FeaturesTourController(
+    'ecovision-home',
+  );
+  final Map<int, GlobalKey> _tourKeys = {
+    for (var index = 0; index < 6; index++) index: GlobalKey(),
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _tourController.start(
+          context,
+          delay: const Duration(milliseconds: 350),
+        );
+      }
+    });
+  }
+
+  Widget _tourStep({
+    required BuildContext context,
+    required int index,
+    required String title,
+    required String description,
+    required Widget child,
+  }) {
+    final palette = AppPalette.of(context);
+    return FeaturesTour(
+      key: _tourKeys[index],
+      controller: _tourController,
+      index: index.toDouble(),
+      introduce: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: palette.text,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            description,
+            style: TextStyle(
+              color: palette.secondaryText,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'STEP ${index + 1} OF 6',
+            style: TextStyle(
+              color: palette.primary,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.1,
+            ),
+          ),
+        ],
+      ),
+      onBeforeIntroduce: () async {
+        final target = _tourKeys[index]?.currentContext;
+        if (target != null) {
+          await Scrollable.ensureVisible(
+            target,
+            duration: const Duration(milliseconds: 380),
+            curve: Curves.easeInOutCubic,
+            alignment: 0.3,
+          );
+        }
+      },
+      child: child,
+    );
+  }
+
+  Widget _buildDiscoverySection(BuildContext context) {
+    final palette = AppPalette.of(context);
     return DefaultTabController(
       length: 2,
       child: Column(
@@ -24,16 +115,17 @@ class HomeView extends GetView<HomeController> {
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             dividerColor: Colors.transparent,
-            indicatorColor: const Color(0xFF1B4D3E),
-            labelColor: const Color(0xFF1B4D3E),
-            unselectedLabelColor: const Color(0xFF64748B),
+            indicatorColor: palette.primary,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelColor: palette.primary,
+            unselectedLabelColor: palette.secondaryText,
             labelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
             ),
             tabs: const [
-              Tab(text: 'Discovery Feed'),
-              Tab(text: 'Saved Observations'),
+              Tab(text: 'Recent sightings'),
+              Tab(text: 'Saved'),
             ],
           ),
           const SizedBox(height: 16),
@@ -55,6 +147,7 @@ class HomeView extends GetView<HomeController> {
       }
       if (controller.discoveryService.sightingsFeed.isEmpty) {
         return _buildEmptyDiscovery(
+          context,
           'No recent sightings detected across your archive.',
         );
       }
@@ -72,7 +165,10 @@ class HomeView extends GetView<HomeController> {
   Widget _buildSavedObservations() {
     return Obx(() {
       if (controller.discoveryService.savedObservations.isEmpty) {
-        return _buildEmptyDiscovery('You haven\'t saved any observations yet.');
+        return _buildEmptyDiscovery(
+          context,
+          'You haven\'t saved any observations yet.',
+        );
       }
       return ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -86,6 +182,7 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _buildMomentCard(BuildContext context, SearchResultModel result) {
+    final palette = AppPalette.of(context);
     final thumbUrl = result.thumbnailUrl;
 
     void openPlayer() {
@@ -123,9 +220,9 @@ class HomeView extends GetView<HomeController> {
         width: 220,
         margin: const EdgeInsets.only(right: 16, bottom: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: palette.divider),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
@@ -139,9 +236,9 @@ class HomeView extends GetView<HomeController> {
           children: [
             Expanded(
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+                decoration: BoxDecoration(
+                  color: palette.surfaceVariant,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
                 child: Stack(
                   children: [
@@ -149,17 +246,17 @@ class HomeView extends GetView<HomeController> {
                       Positioned.fill(
                         child: ClipRRect(
                           borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(14),
+                            top: Radius.circular(16),
                           ),
                           child: Image(
                             image: thumbUrl.startsWith('http')
                                 ? NetworkImage(thumbUrl)
                                 : FileImage(File(thumbUrl)),
                             fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const Center(
+                            errorBuilder: (_, _, _) => Center(
                               child: Icon(
                                 Icons.movie_rounded,
-                                color: Color(0xFF94A3B8),
+                                color: palette.secondaryText,
                               ),
                             ),
                           ),
@@ -186,13 +283,13 @@ class HomeView extends GetView<HomeController> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1B4D3E),
+                          color: palette.primary,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           'Start @ ${result.formattedTimestamp}',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: palette.onPrimary,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
@@ -228,9 +325,10 @@ class HomeView extends GetView<HomeController> {
                     result.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
+                      color: palette.text,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -238,9 +336,9 @@ class HomeView extends GetView<HomeController> {
                     result.videoFileName.isNotEmpty
                         ? result.videoFileName
                         : 'Wildlife Moment',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
+                      color: palette.secondaryText,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -254,21 +352,18 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildEmptyDiscovery(String message) {
+  Widget _buildEmptyDiscovery(BuildContext context, String message) {
+    final palette = AppPalette.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.auto_awesome_rounded,
-            color: Color(0xFFCBD5E1),
-            size: 32,
-          ),
+          Icon(Icons.nature_outlined, color: palette.secondaryText, size: 32),
           const SizedBox(height: 8),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            style: TextStyle(fontSize: 13, color: palette.secondaryText),
           ),
         ],
       ),
@@ -277,25 +372,73 @@ class HomeView extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.eco_rounded, color: Color(0xFF1B4D3E), size: 24),
-            SizedBox(width: 8),
-            Text(
-              AppConstants.appName,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1B4D3E),
-              ),
-            ),
-          ],
+        title: _tourStep(
+          context: context,
+          index: 0,
+          title: 'Welcome to EcoVision',
+          description: 'Your field footage, sightings, and saved observations all come together here.',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const AppLogo(),
+              const SizedBox(width: 8),
+              const Text(AppConstants.appName),
+            ],
+          ),
         ),
         actions: [
+          PopupMenuButton<AdaptiveThemeMode>(
+            tooltip: 'Appearance',
+            initialValue: AdaptiveTheme.of(context).mode,
+            icon: Icon(
+              Theme.of(context).brightness == Brightness.dark
+                  ? Icons.dark_mode_outlined
+                  : Icons.light_mode_outlined,
+            ),
+            onSelected: (mode) => AdaptiveTheme.of(context).setThemeMode(mode),
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: AdaptiveThemeMode.system,
+                child: Row(
+                  children: [
+                    Icon(Icons.brightness_auto_outlined),
+                    SizedBox(width: 12),
+                    Text('System'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: AdaptiveThemeMode.light,
+                child: Row(
+                  children: [
+                    Icon(Icons.light_mode_outlined),
+                    SizedBox(width: 12),
+                    Text('Light'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: AdaptiveThemeMode.dark,
+                child: Row(
+                  children: [
+                    Icon(Icons.dark_mode_outlined),
+                    SizedBox(width: 12),
+                    Text('Dark'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           IconButton(
-            icon: const Icon(Icons.key_rounded),
+            icon: const Icon(Icons.insights_outlined),
+            tooltip: 'Research dashboard',
+            onPressed: controller.goToDashboard,
+          ),
+          IconButton(
+            icon: const Icon(Icons.tune_rounded),
             tooltip: 'API Key Configuration',
             onPressed: () => _showApiKeyDialog(context),
           ),
@@ -304,282 +447,273 @@ class HomeView extends GetView<HomeController> {
       body: SafeArea(
         bottom: true,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          padding: const EdgeInsets.fromLTRB(24, 18, 24, 36),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header Banner
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1B4D3E), Color(0xFF2E7D32)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: palette.accent,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF1B4D3E).withValues(alpha: 0.25),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                  const SizedBox(width: 9),
+                  Text(
+                    'FIELDWORK, MADE SEARCHABLE',
+                    style: TextStyle(
+                      color: palette.secondaryText,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5,
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Environmental Video Research',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Index wildlife footage and search moments using natural language powered by V-Modal AI.',
-                      style: TextStyle(
-                        color: Color(0xFFE8F5E9),
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-
-              // SDK Configuration Status Widget
-              Obx(() {
-                final isConfigured = controller.vmodalService.isConfigured;
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isConfigured
-                        ? const Color(0xFFF0FDF4)
-                        : const Color(0xFFFFFBEB),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isConfigured
-                          ? const Color(0xFFBBF7D0)
-                          : const Color(0xFFFDE68A),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isConfigured
-                            ? Icons.check_circle_rounded
-                            : Icons.info_outline_rounded,
-                        color: isConfigured
-                            ? const Color(0xFF16A34A)
-                            : const Color(0xFFD97706),
-                        size: 22,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          isConfigured
-                              ? 'V-Modal SDK active & authenticated'
-                              : 'V-Modal API key needed to enable live search',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: isConfigured
-                                ? const Color(0xFF15803D)
-                                : const Color(0xFFB45309),
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => _showApiKeyDialog(context),
-                        child: Text(isConfigured ? 'Change' : 'Set Key'),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-              const SizedBox(height: 24),
-
-              // Quick Actions Section
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final uploadButton = AppButton(
-                    label: 'Upload Video',
-                    icon: Icons.video_call_rounded,
-                    onPressed: controller.goToUpload,
-                  );
-                  final searchButton = AppButton(
-                    label: 'Search Footage',
-                    icon: Icons.search_rounded,
-                    isSecondary: true,
-                    onPressed: controller.goToSearch,
-                  );
-                  final dashboardButton = AppButton(
-                    label: 'Dashboard',
-                    icon: Icons.bar_chart_rounded,
-                    isSecondary: true,
-                    onPressed: controller.goToDashboard,
-                  );
-
-                  if (constraints.maxWidth < 500) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        uploadButton,
-                        const SizedBox(height: 10),
-                        searchButton,
-                        const SizedBox(height: 10),
-                        dashboardButton,
-                      ],
-                    );
-                  }
-
-                  return Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(child: uploadButton),
-                          const SizedBox(width: 14),
-                          Expanded(child: searchButton),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(child: dashboardButton),
-                          const SizedBox(width: 14),
-                          const Expanded(child: SizedBox.shrink()),
-                        ],
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 28),
-
-              // Active Video Section
-              const Text(
-                'Current Wildlife Footage',
+              const SizedBox(height: 18),
+              Text(
+                'Find the moment\nthat matters.',
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3748),
+                  color: palette.text,
+                  fontSize: 38,
+                  height: 1.08,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -1.6,
                 ),
               ),
               const SizedBox(height: 12),
-              Obx(() {
-                final video = controller.currentVideo;
-                if (video == null) {
-                  return Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+              Text(
+                'Bring your wildlife footage together and discover the details worth a closer look.',
+                style: TextStyle(
+                  color: palette.secondaryText,
+                  fontSize: 15,
+                  height: 1.55,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: _tourStep(
+                      context: context,
+                      index: 1,
+                      title: 'Bring in your footage',
+                      description: 'Choose a wildlife clip from your device. EcoVision indexes it so you can find specific moments later.',
+                      child: AppButton(
+                        label: 'Upload',
+                        icon: Icons.add_rounded,
+                        onPressed: controller.goToUpload,
+                      ),
                     ),
-                    child: Column(
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _tourStep(
+                      context: context,
+                      index: 2,
+                      title: 'Search by what you saw',
+                      description: 'Describe a scene in everyday language and jump straight to matching moments in your footage.',
+                      child: AppButton(
+                        label: 'Search',
+                        icon: Icons.search_rounded,
+                        isSecondary: true,
+                        onPressed: controller.goToSearch,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: controller.goToDashboard,
+                  icon: const Icon(Icons.insights_outlined, size: 17),
+                  label: const Text('Open research dashboard'),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.only(left: 2, top: 12, bottom: 4),
+                    foregroundColor: palette.secondaryText,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+              _tourStep(
+                context: context,
+                index: 3,
+                title: 'Connect your archive',
+                description: 'Add your V-Modal API key here to enable indexing and search across your footage.',
+                child: Obx(() {
+                  final isConfigured = controller.vmodalService.isConfigured;
+                  return Container(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+                    decoration: BoxDecoration(
+                      color: palette.surface.withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: palette.divider),
+                    ),
+                    child: Row(
                       children: [
-                        const Icon(
-                          Icons.cloud_upload_outlined,
-                          size: 42,
-                          color: Color(0xFFA0AEC0),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'No footage uploaded yet',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: Color(0xFF4A5568),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: isConfigured
+                                ? palette.success
+                                : palette.warning,
+                            shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Select a wildlife video to upload and index using V-Modal.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF718096),
+                        const SizedBox(width: 11),
+                        Expanded(
+                          child: Text(
+                            isConfigured
+                                ? 'Archive connection is ready'
+                                : 'Connect your archive to get started',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: palette.secondaryText,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: controller.goToUpload,
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('Select Wildlife Footage'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1B4D3E),
-                            foregroundColor: Colors.white,
+                        TextButton(
+                          onPressed: () => _showApiKeyDialog(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
+                          child: Text(isConfigured ? 'Manage' : 'Connect'),
                         ),
                       ],
                     ),
                   );
-                }
-
-                return VideoCard(
-                  video: video,
-                  onUploadTap: controller.goToUpload,
-                  onSearchTap: controller.goToSearch,
-                );
-              }),
-              const SizedBox(height: 28),
-
-              // Tabs for Sightings and Bookmarks
-              _buildDiscoverySection(),
-
-              const SizedBox(height: 28),
-
-              // Research Guide Info Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                }),
+              ),
+              const SizedBox(height: 34),
+              _tourStep(
+                context: context,
+                index: 4,
+                title: 'Your current footage',
+                description: 'Check the clip you selected, see its indexing status, and continue searching when it is ready.',
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline_rounded,
-                          size: 20,
-                          color: Color(0xFF475569),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'How EcoVision Works',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                     Text(
-                      '1. Select environmental video footage from your device.\n'
-                      '2. Upload & index it with V-Modal multimodal engine.\n'
-                      '3. Query moments in natural language ("elephants near water").\n'
-                      '4. Jump directly to matching video timestamps.',
+                      'Your footage',
                       style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF64748B),
-                        height: 1.5,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.5,
+                        color: palette.text,
                       ),
                     ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'The clips you are currently exploring.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: palette.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Obx(() {
+                      final video = controller.currentVideo;
+                      if (video == null) {
+                        return Container(
+                          padding: const EdgeInsets.fromLTRB(20, 26, 20, 22),
+                          decoration: BoxDecoration(
+                            color: palette.surface,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: palette.divider),
+                          ),
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: palette.surfaceVariant,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.video_library_outlined,
+                                  size: 23,
+                                  color: palette.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Text(
+                                'A fresh perspective starts here',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  color: palette.text,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Add a clip to make its moments searchable.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  height: 1.45,
+                                  color: palette.secondaryText,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton.icon(
+                                onPressed: controller.goToUpload,
+                                icon: const Icon(Icons.add_rounded, size: 18),
+                                label: const Text('Add your first clip'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return VideoCard(
+                        video: video,
+                        onUploadTap: controller.goToUpload,
+                        onSearchTap: controller.goToSearch,
+                      );
+                    }),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 36),
+              _tourStep(
+                context: context,
+                index: 5,
+                title: 'Keep the moments that matter',
+                description: 'Browse recent sightings, open a moment in the player, or save discoveries to revisit later.',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Moments worth keeping',
+                      style: TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.5,
+                        color: palette.text,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'A closer look at recent sightings and saved finds.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: palette.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDiscoverySection(context),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme/app_colors.dart';
+
 class ErrorState extends StatelessWidget {
   final String title;
   final String message;
@@ -14,6 +16,7 @@ class ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableHeight = constraints.maxHeight.isFinite
@@ -30,27 +33,27 @@ class ErrorState extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.error_outline_rounded,
                     size: 54,
-                    color: Color(0xFFE53E3E),
+                    color: palette.error,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
+                      color: palette.text,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     message,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF718096),
+                      color: palette.secondaryText,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -61,8 +64,8 @@ class ErrorState extends StatelessWidget {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Try Again'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B4D3E),
-                        foregroundColor: Colors.white,
+                        backgroundColor: palette.primary,
+                        foregroundColor: palette.onPrimary,
                       ),
                     ),
                   ],

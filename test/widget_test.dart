@@ -1,4 +1,10 @@
+import 'package:features_tour/features_tour.dart';
+import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:wild_sense/app/app.dart';
 import 'package:wild_sense/core/services/video_service.dart';
 import 'package:wild_sense/core/services/vmodal_service.dart';
@@ -8,15 +14,45 @@ import 'package:wild_sense/shared/models/observation_model.dart';
 
 void main() {
   testWidgets('EcoVision app smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const EcoVisionApp());
+    SharedPreferences.setMockInitialValues({});
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+    FeaturesTour.setGlobalConfig(
+      preDialogConfig: PreDialogConfig(enabled: false),
+    );
+    await tester.pumpWidget(
+      const EcoVisionApp(initialThemeMode: AdaptiveThemeMode.dark),
+    );
+    expect(
+      Theme.of(tester.element(find.byType(Scaffold).first)).brightness,
+      Brightness.dark,
+    );
+    expect(find.text('FIELD NOTES, FOUND'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 2200));
+    await tester.pump(const Duration(milliseconds: 500));
+
     expect(find.text('EcoVision'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Welcome to EcoVision'), findsOneWidget);
   });
 
   group('DurationUtils tests', () {
     test('formatDuration formats MM:SS and HH:MM:SS correctly', () {
-      expect(DurationUtils.formatDuration(const Duration(seconds: 14)), '00:14');
-      expect(DurationUtils.formatDuration(const Duration(minutes: 2, seconds: 37)), '02:37');
-      expect(DurationUtils.formatDuration(const Duration(hours: 1, minutes: 5, seconds: 9)), '01:05:09');
+      expect(
+        DurationUtils.formatDuration(const Duration(seconds: 14)),
+        '00:14',
+      );
+      expect(
+        DurationUtils.formatDuration(const Duration(minutes: 2, seconds: 37)),
+        '02:37',
+      );
+      expect(
+        DurationUtils.formatDuration(
+          const Duration(hours: 1, minutes: 5, seconds: 9),
+        ),
+        '01:05:09',
+      );
     });
 
     test('parseTimestampToDuration parses seconds, milliseconds and clock strings', () {
@@ -29,7 +65,10 @@ void main() {
       expect(DurationUtils.parseTimestampToDuration(14.0).inSeconds, 14);
       expect(DurationUtils.parseTimestampToDuration(150000).inSeconds, 150);
       expect(DurationUtils.parseTimestampToDuration('02:37').inSeconds, 157);
-      expect(DurationUtils.parseTimestampToDuration('01:05:09').inSeconds, 3909);
+      expect(
+        DurationUtils.parseTimestampToDuration('01:05:09').inSeconds,
+        3909,
+      );
       expect(DurationUtils.parseTimestampToDuration(null), Duration.zero);
     });
   });
@@ -88,7 +127,11 @@ void main() {
     test('relative keys win over absolute ones and stay exact', () {
       final results = SearchResultModel.resolveTimestamps(
         [
-          {'title': 'hit', 'start_time': 42.5, 'ts_unix_13digits': 1700000000000},
+          {
+            'title': 'hit',
+            'start_time': 42.5,
+            'ts_unix_13digits': 1700000000000,
+          },
         ],
         query: 'bear',
         videoPath: '/path/to/video.mp4',
@@ -126,24 +169,31 @@ void main() {
       expect(model.formattedTimestamp, '00:00');
     });
 
-    test('multiple hits in one video are resolved as individual moment results', () {
-      final hits = [
-        {'title': 'Bear fishing', 'start_time': 10, 'filename': 'nature.mp4'},
-        {'title': 'Bear eating', 'start_time': 45, 'filename': 'nature.mp4'},
-        {'title': 'Bear resting', 'start_time': 120, 'filename': 'nature.mp4'},
-      ];
+    test(
+      'multiple hits in one video are resolved as individual moment results',
+      () {
+        final hits = [
+          {'title': 'Bear fishing', 'start_time': 10, 'filename': 'nature.mp4'},
+          {'title': 'Bear eating', 'start_time': 45, 'filename': 'nature.mp4'},
+          {
+            'title': 'Bear resting',
+            'start_time': 120,
+            'filename': 'nature.mp4',
+          },
+        ];
 
-      final results = SearchResultModel.resolveTimestamps(
-        hits,
-        query: 'bear',
-        videoPath: '/path/nature.mp4',
-      );
+        final results = SearchResultModel.resolveTimestamps(
+          hits,
+          query: 'bear',
+          videoPath: '/path/nature.mp4',
+        );
 
-      expect(results.length, 3);
-      expect(results[0].formattedTimestamp, '00:10');
-      expect(results[1].formattedTimestamp, '00:45');
-      expect(results[2].formattedTimestamp, '02:00');
-    });
+        expect(results.length, 3);
+        expect(results[0].formattedTimestamp, '00:10');
+        expect(results[1].formattedTimestamp, '00:45');
+        expect(results[2].formattedTimestamp, '02:00');
+      },
+    );
   });
 
   group('CollectionReadiness tests', () {
@@ -219,7 +269,10 @@ void main() {
     });
 
     test('stays within the 80 character limit', () {
-      final name = VideoService.buildStreamName('${'a' * 200}.mp4', '1699999999');
+      final name = VideoService.buildStreamName(
+        '${'a' * 200}.mp4',
+        '1699999999',
+      );
       expect(name.length, lessThanOrEqualTo(80));
       expect(name, endsWith('_1699999999'));
     });

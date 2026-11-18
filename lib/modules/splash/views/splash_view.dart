@@ -33,7 +33,9 @@ class _SplashViewState extends State<SplashView>
     );
     _animationController.forward();
     _navigationTimer = Timer(const Duration(milliseconds: 2200), () {
-      if (mounted) Get.offNamed(AppRoutes.home);
+      if (mounted && Get.currentRoute == AppRoutes.splash) {
+        Get.offNamed(AppRoutes.home);
+      }
     });
   }
 

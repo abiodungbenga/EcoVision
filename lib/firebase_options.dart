@@ -51,18 +51,17 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDe4OOpJ1wAQKjMLTuW5F73ryLR0KvHYZU',
-    appId: '1:248695118816:android:1f0a22b8eaed6d5c722985',
+    appId: '1:248695118816:android:5420df8f555f1f8b722985',
     messagingSenderId: '248695118816',
     projectId: 'ecovisionwild',
     storageBucket: 'ecovisionwild.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCUWqoS1JWS5PvVXnBTsNOjvTCvdLqNtus',
-    appId: '1:248695118816:ios:6a9c02c88d15ef55722985',
+    appId: '1:248695118816:ios:95a8bee3c9d0a717722985',
     messagingSenderId: '248695118816',
     projectId: 'ecovisionwild',
     storageBucket: 'ecovisionwild.firebasestorage.app',
-    iosBundleId: 'com.example.ecovision',
+    iosBundleId: 'com.wildlife.ecovision',
   );
 }

@@ -8,6 +8,7 @@ import 'bindings/initial_binding.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
 import '../core/services/api_key_service.dart';
+import '../core/services/notification_service.dart';
 import '../core/services/vmodal_service.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
@@ -19,12 +20,14 @@ class EcoVisionApp extends StatelessWidget {
     this.internetChecker,
     this.apiKeyService,
     this.vmodalService,
+    this.notificationService,
   });
 
   final AdaptiveThemeMode? initialThemeMode;
   final InternetChecker? internetChecker;
   final ApiKeyService? apiKeyService;
   final VModalService? vmodalService;
+  final NotificationService? notificationService;
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +66,7 @@ class EcoVisionApp extends StatelessWidget {
             ),
             initialRoute: AppRoutes.splash,
             getPages: AppPages.routes,
+            onReady: notificationService?.onNavigatorReady,
           );
         },
       ),

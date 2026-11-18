@@ -1,4 +1,5 @@
 import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:features_tour/features_tour.dart';
 
@@ -6,10 +7,16 @@ import 'app/app.dart';
 import 'app/theme/app_colors.dart';
 import 'app/theme/app_typography.dart';
 import 'core/services/api_key_service.dart';
+import 'core/services/notification_service.dart';
 import 'core/services/vmodal_service.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final notificationService = NotificationService.instance;
+  await notificationService.initialize();
+
   final vmodalService = VModalService();
   final apiKeyService = ApiKeyService(vmodalService: vmodalService);
   await apiKeyService.initialize();
@@ -87,6 +94,7 @@ Future<void> main() async {
       initialThemeMode: savedThemeMode,
       apiKeyService: apiKeyService,
       vmodalService: vmodalService,
+      notificationService: notificationService,
     ),
   );
 }

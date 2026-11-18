@@ -50,8 +50,9 @@ dependencies:
   flutter_secure_storage: ^11.2.0
   crypto: ^3.0.8
   url_launcher: ^6.3.3
-  firebase_core: ^5.2.0
-  firebase_messaging: ^17.1.0
+  firebase_core: ^4.15.2
+  awesome_notifications: ^0.12.1
+  awesome_notifications_fcm: ^0.12.1
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,4 @@
-package com.example.ecovision
+package com.wildlife.ecovision
 
 import io.flutter.embedding.android.FlutterActivity
 

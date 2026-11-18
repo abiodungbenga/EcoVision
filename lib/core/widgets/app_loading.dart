@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
+
+import '../constants/lottie_assets.dart';
 
 class AppLoading extends StatelessWidget {
   final String? message;
@@ -7,24 +10,25 @@ class AppLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1B4D3E)),
+          Lottie.asset(
+            isDark ? LottieAssets.loaderDark : LottieAssets.loaderLight,
+            width: 160,
+            height: 100,
+            fit: BoxFit.contain,
           ),
           if (message != null) ...[
             const SizedBox(height: 16),
             Text(
               message!,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF4A5568),
-              ),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
         ],

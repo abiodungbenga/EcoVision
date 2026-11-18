@@ -8,12 +8,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:network_internet_checker/network_internet_checker.dart';
+import 'package:lottie/lottie.dart';
 import 'package:wild_sense/app/app.dart';
 import 'package:wild_sense/app/theme/app_theme.dart';
 import 'package:wild_sense/core/services/api_key_service.dart';
 import 'package:wild_sense/core/services/video_service.dart';
 import 'package:wild_sense/core/services/vmodal_service.dart';
 import 'package:wild_sense/core/utils/duration_utils.dart';
+import 'package:wild_sense/core/constants/lottie_assets.dart';
+import 'package:wild_sense/core/widgets/app_loading.dart';
 import 'package:wild_sense/shared/models/search_result_model.dart';
 import 'package:wild_sense/shared/models/observation_model.dart';
 import 'package:wild_sense/shared/models/video_model.dart';
@@ -23,6 +26,38 @@ import 'package:wild_sense/modules/about/views/about_view.dart';
 import 'package:wild_sense/modules/saved_sightings/views/saved_sightings_view.dart';
 
 void main() {
+  testWidgets('AppLoading uses the animation matching the active theme', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: const Scaffold(body: AppLoading()),
+      ),
+    );
+    final lightLottie = tester.widget<LottieBuilder>(
+      find.byType(LottieBuilder),
+    );
+    expect(
+      (lightLottie.lottie as AssetLottie).assetName,
+      LottieAssets.loaderLight,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: const Scaffold(body: AppLoading()),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    final darkLottie = tester.widget<LottieBuilder>(find.byType(LottieBuilder));
+    expect(
+      (darkLottie.lottie as AssetLottie).assetName,
+      LottieAssets.loaderDark,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('EcoVision app smoke test', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     SharedPreferencesAsyncPlatform.instance =
@@ -54,9 +89,15 @@ void main() {
       Theme.of(tester.element(find.byType(Scaffold).first)).brightness,
       Brightness.dark,
     );
+    expect(
+      (tester.widget<LottieBuilder>(find.byType(LottieBuilder)).lottie
+              as AssetLottie)
+          .assetName,
+      LottieAssets.splash,
+    );
     expect(find.text('FIELD NOTES, FOUND'), findsOneWidget);
 
-    await tester.pump(const Duration(milliseconds: 2200));
+    await tester.pump(const Duration(seconds: 4));
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('EcoVision'), findsOneWidget);

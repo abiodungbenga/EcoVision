@@ -13,6 +13,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/services/api_key_service.dart';
 import '../../../core/services/network_status_service.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_loading.dart';
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/app_bottom_navigation_bar.dart';
 import '../../../shared/widgets/video_card.dart';
@@ -198,7 +199,7 @@ class _HomeViewState extends State<HomeView> {
   Widget _buildSightingsFeed() {
     return Obx(() {
       if (controller.discoveryService.isFetchingFeed.value) {
-        return const Center(child: CircularProgressIndicator());
+        return const AppLoading();
       }
       if (controller.discoveryService.sightingsFeed.isEmpty) {
         return _buildEmptyDiscovery(

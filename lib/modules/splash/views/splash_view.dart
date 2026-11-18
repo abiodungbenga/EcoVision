@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
-import '../../../shared/widgets/app_logo.dart';
+import '../../../core/constants/lottie_assets.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -16,6 +17,8 @@ class SplashView extends StatefulWidget {
 
 class _SplashViewState extends State<SplashView>
     with SingleTickerProviderStateMixin {
+  static const _splashDuration = Duration(seconds: 4);
+
   late final AnimationController _animationController;
   late final Animation<double> _entrance;
   Timer? _navigationTimer;
@@ -32,7 +35,7 @@ class _SplashViewState extends State<SplashView>
       curve: Curves.easeOutCubic,
     );
     _animationController.forward();
-    _navigationTimer = Timer(const Duration(milliseconds: 2200), () {
+    _navigationTimer = Timer(_splashDuration, () {
       if (mounted && Get.currentRoute == AppRoutes.splash) {
         Get.offNamed(AppRoutes.home);
       }
@@ -93,7 +96,13 @@ class _SplashViewState extends State<SplashView>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const AppLogo(showWordmark: true, width: 228),
+                  Lottie.asset(
+                    LottieAssets.splash,
+                    width: 300,
+                    height: 225,
+                    fit: BoxFit.contain,
+                    repeat: false,
+                  ),
                   const SizedBox(height: 17),
                   Text(
                     'FIELD NOTES, FOUND',
@@ -114,7 +123,7 @@ class _SplashViewState extends State<SplashView>
             bottom: MediaQuery.paddingOf(context).bottom + 32,
             child: TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: 1),
-              duration: const Duration(milliseconds: 1900),
+              duration: _splashDuration,
               curve: Curves.easeInOut,
               builder: (context, progress, child) => ClipRRect(
                 borderRadius: BorderRadius.circular(2),

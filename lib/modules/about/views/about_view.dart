@@ -128,7 +128,7 @@ class AboutView extends StatelessWidget {
             _sectionHeading(context, 'Your key and your footage'),
             const SizedBox(height: 8),
             Text(
-              'Your V-Modal API key is stored encrypted on this device for the duration you choose. Each uploaded video is associated with the key used for that upload; changing keys can mean uploading a video again. Revoking a key disconnects this device but does not delete videos already stored in your V-Modal account.',
+              'Your personal V-Modal API key and saved research data are kept in this device profile for your signed-in account. EcoVision may also offer a shared key managed through Firebase Remote Config; that key is delivered to the app and is not secret. Each account uses its own V-Modal collection. Each uploaded video is associated with the key used for that upload, so changing keys can mean uploading a video again. Revoking a personal key does not delete videos already stored in your V-Modal account.',
               style: AppTypography.body.copyWith(color: palette.secondaryText),
             ),
             const SizedBox(height: 22),

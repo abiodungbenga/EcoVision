@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../core/services/api_key_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/services/video_service.dart';
 import '../../../core/services/vmodal_service.dart';
 import '../../../core/services/indexing_service.dart';
@@ -13,6 +14,7 @@ import '../../../shared/models/video_model.dart';
 class HomeController extends GetxController {
   final VModalService vmodalService = Get.find<VModalService>();
   final ApiKeyService apiKeyService = Get.find<ApiKeyService>();
+  final AuthService authService = Get.find<AuthService>();
   final VideoService videoService = Get.find<VideoService>();
   final DiscoveryService discoveryService = Get.find<DiscoveryService>();
   final IndexingService indexingService = Get.find<IndexingService>();
@@ -77,6 +79,68 @@ class HomeController extends GetxController {
     } catch (error) {
       SnackbarUtils.showError('Could not update API key retention: $error');
       return false;
+    }
+  }
+
+  Future<bool> useSharedApiKey() async {
+    try {
+      isConnecting.value = true;
+      await apiKeyService.useSharedKey();
+      await indexingService.resumePendingIndexing();
+      discoveryService.fetchSightingsFeed();
+      SnackbarUtils.showSuccess('The free V-Modal key is ready to use.');
+      return true;
+    } catch (error) {
+      SnackbarUtils.showError('Could not use the free API key: $error');
+      return false;
+    } finally {
+      isConnecting.value = false;
+    }
+  }
+
+  Future<bool> usePersonalApiKey() async {
+    try {
+      isConnecting.value = true;
+      await apiKeyService.usePersonalKey();
+      await indexingService.resumePendingIndexing();
+      discoveryService.fetchSightingsFeed();
+      SnackbarUtils.showSuccess('Your personal V-Modal key is ready to use.');
+      return true;
+    } catch (error) {
+      SnackbarUtils.showError('Could not use your saved API key: $error');
+      return false;
+    } finally {
+      isConnecting.value = false;
+    }
+  }
+
+  Future<bool> refreshSharedApiKey() async {
+    try {
+      isConnecting.value = true;
+      await apiKeyService.refreshSharedKey();
+      if (apiKeyService.sharedKeyAvailable.value) {
+        SnackbarUtils.showSuccess('The free V-Modal key is available.');
+      } else {
+        SnackbarUtils.showInfo('The free V-Modal key has not been configured.');
+      }
+      return apiKeyService.sharedKeyAvailable.value;
+    } catch (error) {
+      SnackbarUtils.showError('Could not load the free API key: $error');
+      return false;
+    } finally {
+      isConnecting.value = false;
+    }
+  }
+
+  Future<void> signOut() async {
+    try {
+      await authService.signOut();
+      Get.offAllNamed(AppRoutes.login);
+    } catch (error) {
+      SnackbarUtils.showError('Could not sign out: $error');
+      if (authService.currentUser == null) {
+        Get.offAllNamed(AppRoutes.login);
+      }
     }
   }
 

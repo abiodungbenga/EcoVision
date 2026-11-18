@@ -23,6 +23,7 @@ class NotificationService {
   String? _fcmToken;
 
   String? get fcmToken => _fcmToken;
+  Future<void> Function(String token)? onFcmTokenChanged;
 
   Future<void> initialize() async {
     final notificationsInitialized = await AwesomeNotifications().initialize(
@@ -170,9 +171,8 @@ class NotificationService {
   @pragma('vm:entry-point')
   static Future<void> onFcmTokenHandle(String token) async {
     instance._fcmToken = token;
-    if (kDebugMode && token.isNotEmpty) {
-      debugPrint('Firebase Cloud Messaging token: $token');
-    }
+    if (token.isNotEmpty) await instance.onFcmTokenChanged?.call(token);
+    if (kDebugMode && token.isNotEmpty) debugPrint('FCM token updated.');
   }
 
   @pragma('vm:entry-point')

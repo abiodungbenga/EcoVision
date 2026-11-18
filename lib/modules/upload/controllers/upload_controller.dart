@@ -137,6 +137,7 @@ class UploadController extends GetxController {
     try {
       final video = await videoService.pickVideo(
         apiKeyProfileId: apiKeyService.apiKeyProfileId,
+        collectionName: vmodalService.currentCollectionName,
       );
       if (video != null) {
         uploadProgress.value = 0.0;

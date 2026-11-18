@@ -1,4 +1,5 @@
 import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:features_tour/features_tour.dart';
@@ -7,6 +8,7 @@ import 'app/app.dart';
 import 'app/theme/app_colors.dart';
 import 'app/theme/app_typography.dart';
 import 'core/services/api_key_service.dart';
+import 'core/services/shared_api_key_provider.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/vmodal_service.dart';
 import 'firebase_options.dart';
@@ -14,12 +16,19 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseAuth.instance.authStateChanges().first;
+  final userId = FirebaseAuth.instance.currentUser?.uid;
   final notificationService = NotificationService.instance;
   await notificationService.initialize();
 
   final vmodalService = VModalService();
-  final apiKeyService = ApiKeyService(vmodalService: vmodalService);
-  await apiKeyService.initialize();
+  vmodalService.setUserId(userId);
+  final apiKeyService = ApiKeyService(
+    vmodalService: vmodalService,
+    sharedApiKeyProvider: FirebaseSharedApiKeyProvider(),
+    userId: userId,
+  );
+  if (userId != null) await apiKeyService.initialize();
   FeaturesTour.setGlobalConfig(
     preferencePrefix: 'ecovision',
     preDialogConfig: PreDialogConfig(enabled: false),

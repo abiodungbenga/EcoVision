@@ -7,6 +7,7 @@ import 'package:vmodal_sdk_flutter/vmodal_sdk_flutter.dart';
 import '../constants/app_constants.dart';
 import '../errors/app_exception.dart';
 import '../../shared/models/search_result_model.dart';
+import '../utils/user_data_namespace.dart';
 
 /// What a collection can actually be searched for, read from the backend.
 ///
@@ -132,6 +133,12 @@ class VModalService extends GetxService {
   String currentProjectId = AppConstants.defaultProjectId;
   String currentCollectionName = AppConstants.defaultCollectionName;
   String currentStreamName = AppConstants.defaultStreamName;
+
+  void setUserId(String? userId) {
+    currentCollectionName = userId == null || userId.isEmpty
+        ? AppConstants.defaultCollectionName
+        : 'ecovision_${UserDataNamespace.sanitizeUserId(userId)}';
+  }
 
   /// Initializes V-Modal SDK with runtime API key.
   Future<bool> configure(String apiKey, {String? projectId}) async {

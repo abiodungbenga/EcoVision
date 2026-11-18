@@ -295,215 +295,224 @@ class _SavedSightingsViewState extends State<SavedSightingsView> {
       bottomNavigationBar: const AppBottomNavigationBar(selectedIndex: 0),
       appBar: AppBar(title: const Text('Saved sightings')),
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _query = value),
-                    decoration: InputDecoration(
-                      hintText: 'Search saved sightings',
-                      prefixIcon: const Icon(Icons.search_rounded),
-                      suffixIcon: _query.isEmpty
-                          ? null
-                          : IconButton(
-                              tooltip: 'Clear search',
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _query = '');
-                              },
-                              icon: const Icon(Icons.close_rounded),
-                            ),
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => Get.focusScope?.unfocus(),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (value) => setState(() => _query = value),
+                      decoration: InputDecoration(
+                        hintText: 'Search saved sightings',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: _query.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Clear search',
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _query = '');
+                                },
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Obx(() {
-                    final sightings = _discoveryService.savedObservations;
-                    final videos =
-                        sightings
-                            .map((item) => item.videoFileName)
-                            .where((name) => name.isNotEmpty)
-                            .toSet()
-                            .toList()
-                          ..sort();
+                    const SizedBox(height: 10),
+                    Obx(() {
+                      final sightings = _discoveryService.savedObservations;
+                      final videos =
+                          sightings
+                              .map((item) => item.videoFileName)
+                              .where((name) => name.isNotEmpty)
+                              .toSet()
+                              .toList()
+                            ..sort();
 
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String?>(
-                            initialValue: _selectedVideo ?? _allVideosValue,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Video',
-                              prefixIcon: Icon(Icons.video_library_outlined),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                            ),
-                            items: [
-                              const DropdownMenuItem<String?>(
-                                value: _allVideosValue,
-                                child: Text('All videos'),
-                              ),
-                              ...videos.map(
-                                (video) => DropdownMenuItem<String?>(
-                                  value: video,
-                                  child: Text(
-                                    video,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String?>(
+                              initialValue: _selectedVideo ?? _allVideosValue,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Video',
+                                prefixIcon: Icon(Icons.video_library_outlined),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
                                 ),
                               ),
-                            ],
-                            onChanged: (value) => setState(
-                              () => _selectedVideo = value == _allVideosValue
-                                  ? null
-                                  : value,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        PopupMenuButton<SavedTimestampFilter>(
-                          tooltip: 'Filter by timestamp',
-                          initialValue: _timestampFilter,
-                          onSelected: (value) =>
-                              setState(() => _timestampFilter = value),
-                          itemBuilder: (context) => const [
-                            PopupMenuItem<SavedTimestampFilter>(
-                              value: SavedTimestampFilter.any,
-                              child: Text('Any timestamp'),
-                            ),
-                            PopupMenuItem<SavedTimestampFilter>(
-                              value: SavedTimestampFilter.timestamped,
-                              child: Text('Timestamped'),
-                            ),
-                            PopupMenuItem<SavedTimestampFilter>(
-                              value: SavedTimestampFilter.untimestamped,
-                              child: Text('No timestamp'),
-                            ),
-                          ],
-                          child: Container(
-                            height: 56,
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            decoration: BoxDecoration(
-                              color:
-                                  _timestampFilter == SavedTimestampFilter.any
-                                  ? palette.surface
-                                  : palette.primary.withValues(alpha: 0.1),
-                              border: Border.all(
-                                color:
-                                    _timestampFilter == SavedTimestampFilter.any
-                                    ? palette.divider
-                                    : palette.primary,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.filter_list_rounded,
-                                  color:
-                                      _timestampFilter ==
-                                          SavedTimestampFilter.any
-                                      ? palette.secondaryText
-                                      : palette.primary,
+                              items: [
+                                const DropdownMenuItem<String?>(
+                                  value: _allVideosValue,
+                                  child: Text('All videos'),
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _timestampFilter ==
-                                          SavedTimestampFilter.timestamped
-                                      ? 'Timed'
-                                      : _timestampFilter ==
-                                            SavedTimestampFilter.untimestamped
-                                      ? 'Untimed'
-                                      : 'Filter',
-                                  style: TextStyle(
-                                    color: palette.text,
-                                    fontWeight: FontWeight.w600,
+                                ...videos.map(
+                                  (video) => DropdownMenuItem<String?>(
+                                    value: video,
+                                    child: Text(
+                                      video,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Obx(() {
-                final allSightings = _discoveryService.savedObservations;
-                final sightings = filterSavedSightings(
-                  allSightings,
-                  query: _query,
-                  videoFileName: _selectedVideo,
-                  timestampFilter: _timestampFilter,
-                );
-                if (sightings.isEmpty) {
-                  return _buildEmptyState(
-                    context,
-                    hasFilters:
-                        allSightings.isNotEmpty ||
-                        _query.isNotEmpty ||
-                        _selectedVideo != null ||
-                        _timestampFilter != SavedTimestampFilter.any,
-                  );
-                }
-
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final crossAxisCount = constraints.maxWidth >= 1000
-                        ? 4
-                        : constraints.maxWidth >= 650
-                        ? 3
-                        : 2;
-                    return CustomScrollView(
-                      slivers: [
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                          sliver: SliverToBoxAdapter(
-                            child: Text(
-                              '${sightings.length} ${sightings.length == 1 ? 'sighting' : 'sightings'}',
-                              style: TextStyle(
-                                color: palette.secondaryText,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                              onChanged: (value) => setState(
+                                () => _selectedVideo = value == _allVideosValue
+                                    ? null
+                                    : value,
                               ),
                             ),
                           ),
-                        ),
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                          sliver: SliverGrid(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) =>
-                                  _buildSightingCard(context, sightings[index]),
-                              childCount: sightings.length,
-                            ),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
-                                  childAspectRatio: 0.78,
+                          const SizedBox(width: 10),
+                          PopupMenuButton<SavedTimestampFilter>(
+                            tooltip: 'Filter by timestamp',
+                            initialValue: _timestampFilter,
+                            onSelected: (value) =>
+                                setState(() => _timestampFilter = value),
+                            itemBuilder: (context) => const [
+                              PopupMenuItem<SavedTimestampFilter>(
+                                value: SavedTimestampFilter.any,
+                                child: Text('Any timestamp'),
+                              ),
+                              PopupMenuItem<SavedTimestampFilter>(
+                                value: SavedTimestampFilter.timestamped,
+                                child: Text('Timestamped'),
+                              ),
+                              PopupMenuItem<SavedTimestampFilter>(
+                                value: SavedTimestampFilter.untimestamped,
+                                child: Text('No timestamp'),
+                              ),
+                            ],
+                            child: Container(
+                              height: 56,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    _timestampFilter == SavedTimestampFilter.any
+                                    ? palette.surface
+                                    : palette.primary.withValues(alpha: 0.1),
+                                border: Border.all(
+                                  color:
+                                      _timestampFilter ==
+                                          SavedTimestampFilter.any
+                                      ? palette.divider
+                                      : palette.primary,
                                 ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.filter_list_rounded,
+                                    color:
+                                        _timestampFilter ==
+                                            SavedTimestampFilter.any
+                                        ? palette.secondaryText
+                                        : palette.primary,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _timestampFilter ==
+                                            SavedTimestampFilter.timestamped
+                                        ? 'Timed'
+                                        : _timestampFilter ==
+                                              SavedTimestampFilter.untimestamped
+                                        ? 'Untimed'
+                                        : 'Filter',
+                                    style: TextStyle(
+                                      color: palette.text,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Obx(() {
+                  final allSightings = _discoveryService.savedObservations;
+                  final sightings = filterSavedSightings(
+                    allSightings,
+                    query: _query,
+                    videoFileName: _selectedVideo,
+                    timestampFilter: _timestampFilter,
+                  );
+                  if (sightings.isEmpty) {
+                    return _buildEmptyState(
+                      context,
+                      hasFilters:
+                          allSightings.isNotEmpty ||
+                          _query.isNotEmpty ||
+                          _selectedVideo != null ||
+                          _timestampFilter != SavedTimestampFilter.any,
                     );
-                  },
-                );
-              }),
-            ),
-          ],
+                  }
+
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final crossAxisCount = constraints.maxWidth >= 1000
+                          ? 4
+                          : constraints.maxWidth >= 650
+                          ? 3
+                          : 2;
+                      return CustomScrollView(
+                        slivers: [
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            sliver: SliverToBoxAdapter(
+                              child: Text(
+                                '${sightings.length} ${sightings.length == 1 ? 'sighting' : 'sightings'}',
+                                style: TextStyle(
+                                  color: palette.secondaryText,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                            sliver: SliverGrid(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) => _buildSightingCard(
+                                  context,
+                                  sightings[index],
+                                ),
+                                childCount: sightings.length,
+                              ),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: 0.78,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                }),
+              ),
+            ],
+          ),
         ),
       ),
     );

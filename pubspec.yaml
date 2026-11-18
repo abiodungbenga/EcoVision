@@ -53,6 +53,10 @@ dependencies:
   firebase_core: ^4.15.2
   awesome_notifications: ^0.12.1
   awesome_notifications_fcm: ^0.12.1
+  firebase_auth: ^6.7.1
+  firebase_remote_config: ^6.7.1
+  cloud_firestore: ^6.10.2
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

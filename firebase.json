@@ -1,1 +1,25 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"ecovisionwild","appId":"1:248695118816:android:5420df8f555f1f8b722985","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"ecovisionwild","configurations":{"android":"1:248695118816:android:5420df8f555f1f8b722985","ios":"1:248695118816:ios:95a8bee3c9d0a717722985"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "ecovisionwild",
+          "appId": "1:248695118816:android:5420df8f555f1f8b722985",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "ecovisionwild",
+          "configurations": {
+            "android": "1:248695118816:android:5420df8f555f1f8b722985",
+            "ios": "1:248695118816:ios:95a8bee3c9d0a717722985"
+          }
+        }
+      }
+    }
+  }
+}

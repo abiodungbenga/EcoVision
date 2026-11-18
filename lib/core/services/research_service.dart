@@ -2,11 +2,22 @@ import 'package:get/get.dart';
 import 'package:localstore/localstore.dart';
 
 import '../../shared/models/observation_model.dart';
+import '../utils/user_data_namespace.dart';
 
 class ResearchService extends GetxService {
+  ResearchService({String? userId}) : _userId = userId;
+
   final _db = Localstore.instance;
   static const String _obsCollection = 'research_observations';
   static const String _searchCollection = 'search_history';
+  String? _userId;
+  bool _isSignedOutScope = false;
+  int _generation = 0;
+
+  String? get _storageUserId => _isSignedOutScope ? 'signed_out' : _userId;
+
+  String _collectionPath(String collectionName) =>
+      UserDataNamespace.localCollection(collectionName, _storageUserId);
 
   final observations = <ObservationModel>[].obs;
   final searchHistory =
@@ -19,9 +30,13 @@ class ResearchService extends GetxService {
   }
 
   Future<void> loadAllData() async {
+    final generation = _generation;
+    final observationsPath = _collectionPath(_obsCollection);
+    final searchPath = _collectionPath(_searchCollection);
     try {
       // Load observations
-      final obsItems = await _db.collection(_obsCollection).get();
+      final obsItems = await _db.collection(observationsPath).get();
+      if (generation != _generation) return;
       if (obsItems != null) {
         final loadedObs = <ObservationModel>[];
         for (final entry in obsItems.entries) {
@@ -36,11 +51,13 @@ class ResearchService extends GetxService {
         }
         // Sort newest first
         loadedObs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        if (generation != _generation) return;
         observations.assignAll(loadedObs);
       }
 
       // Load search history
-      final searchItems = await _db.collection(_searchCollection).get();
+      final searchItems = await _db.collection(searchPath).get();
+      if (generation != _generation) return;
       if (searchItems != null) {
         final loadedSearches = searchItems.entries
             .map((e) => Map<String, dynamic>.from(e.value))
@@ -57,6 +74,16 @@ class ResearchService extends GetxService {
     }
   }
 
+  Future<void> switchUser(String? userId) async {
+    if (_userId == userId && (userId != null || _isSignedOutScope)) return;
+    _userId = userId;
+    _isSignedOutScope = userId == null;
+    _generation++;
+    observations.clear();
+    searchHistory.clear();
+    await loadAllData();
+  }
+
   Future<bool> saveObservation(ObservationModel obs) async {
     // Prevent exact duplicate based on species, videoName, and timestampMs
     final exists = observations.any(
@@ -70,14 +97,20 @@ class ResearchService extends GetxService {
       return false; // Already exists
     }
 
-    await _db.collection(_obsCollection).doc(obs.id).set(obs.toJson());
-    observations.insert(0, obs);
+    final generation = _generation;
+    await _db
+        .collection(_collectionPath(_obsCollection))
+        .doc(obs.id)
+        .set(obs.toJson());
+    if (generation == _generation) observations.insert(0, obs);
     return true;
   }
 
   Future<void> logSearch(String query) async {
     if (query.trim().isEmpty) return;
 
+    final generation = _generation;
+    final collectionPath = _collectionPath(_searchCollection);
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     final timestamp = DateTime.now().toIso8601String();
     final searchData = {
@@ -87,8 +120,8 @@ class ResearchService extends GetxService {
     };
 
     try {
-      await _db.collection(_searchCollection).doc(id).set(searchData);
-      searchHistory.insert(0, searchData);
+      await _db.collection(collectionPath).doc(id).set(searchData);
+      if (generation == _generation) searchHistory.insert(0, searchData);
     } catch (_) {}
   }
 

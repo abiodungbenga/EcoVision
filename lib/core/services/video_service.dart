@@ -6,23 +6,54 @@ import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
 import 'package:localstore/localstore.dart';
 
+import '../constants/app_constants.dart';
 import '../../shared/models/video_model.dart';
 import '../errors/app_exception.dart';
+import '../utils/user_data_namespace.dart';
 
 class VideoService extends GetxService {
+  VideoService({String? userId}) : _userId = userId;
+
   /// Max length VModal accepts for a stream name.
   static const int _streamNameMax = 80;
   static const String _streamPrefix = 'vid_';
-  static const String _videoCollection = 'uploaded_videos';
-  static const String _settingsCollection = 'video_library_settings';
+  static const String _videoCollectionName = 'uploaded_videos';
+  static const String _settingsCollectionName = 'video_library_settings';
   static const String _activeVideoDocument = 'active_video';
 
   final Localstore _db = Localstore.instance;
-  final Completer<void> _historyLoadCompleter = Completer<void>();
+  Completer<void> _historyLoadCompleter = Completer<void>();
   Object? _historyLoadError;
+  String? _userId;
+  bool _isSignedOutScope = false;
+  int _historyGeneration = 0;
+
+  String? get _storageUserId => _isSignedOutScope ? 'signed_out' : _userId;
+  String get _videoCollection =>
+      UserDataNamespace.localCollection(_videoCollectionName, _storageUserId);
+  String get _settingsCollection => UserDataNamespace.localCollection(
+    _settingsCollectionName,
+    _storageUserId,
+  );
 
   final isHistoryLoaded = false.obs;
   Future<void> get historyLoaded => _historyLoadCompleter.future;
+
+  Future<void> switchUser(String? userId) async {
+    if (_userId == userId && (userId != null || _isSignedOutScope)) return;
+    if (!_historyLoadCompleter.isCompleted) {
+      _historyLoadCompleter.complete();
+    }
+    _userId = userId;
+    _isSignedOutScope = userId == null;
+    _historyGeneration++;
+    _historyLoadError = null;
+    _videoHistory.clear();
+    _currentVideo.value = null;
+    isHistoryLoaded.value = false;
+    _historyLoadCompleter = Completer<void>();
+    await _loadVideoHistory();
+  }
 
   /// Builds a per-video stream name that VModal will accept.
   ///
@@ -61,8 +92,12 @@ class VideoService extends GetxService {
   }
 
   Future<void> _loadVideoHistory() async {
+    final generation = _historyGeneration;
+    final videoCollection = _videoCollection;
+    final settingsCollection = _settingsCollection;
     try {
-      final items = await _db.collection(_videoCollection).get();
+      final items = await _db.collection(videoCollection).get();
+      if (generation != _historyGeneration) return;
       final loadedVideos = <VideoModel>[];
       if (items != null) {
         for (final entry in items.entries) {
@@ -83,12 +118,14 @@ class VideoService extends GetxService {
       }
 
       loadedVideos.sort((a, b) => b.id.compareTo(a.id));
+      if (generation != _historyGeneration) return;
       _videoHistory.assignAll(loadedVideos);
 
       final activeVideo = await _db
-          .collection(_settingsCollection)
+          .collection(settingsCollection)
           .doc(_activeVideoDocument)
           .get();
+      if (generation != _historyGeneration) return;
       if (activeVideo != null) {
         final activeId = activeVideo['videoId'] as String?;
         _currentVideo.value = loadedVideos.firstWhereOrNull(
@@ -100,22 +137,36 @@ class VideoService extends GetxService {
         );
       }
     } catch (error, stackTrace) {
-      _historyLoadError = error;
-      developer.log(
-        'Could not load the saved video library.',
-        name: 'VideoService',
-        error: error,
-        stackTrace: stackTrace,
-      );
+      if (generation == _historyGeneration) {
+        _historyLoadError = error;
+        developer.log(
+          'Could not load the saved video library.',
+          name: 'VideoService',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
     } finally {
-      isHistoryLoaded.value = true;
-      _historyLoadCompleter.complete();
+      if (generation == _historyGeneration) {
+        isHistoryLoaded.value = true;
+        if (!_historyLoadCompleter.isCompleted) {
+          _historyLoadCompleter.complete();
+        }
+      }
     }
   }
 
   /// Pick a video file from local storage using file_picker.
-  Future<VideoModel?> pickVideo({String? apiKeyProfileId}) async {
+  Future<VideoModel?> pickVideo({
+    String? apiKeyProfileId,
+    String? collectionName,
+  }) async {
+    final generation = _historyGeneration;
+    final ownerUserId = _userId;
     await historyLoaded;
+    if (generation != _historyGeneration) {
+      throw StateError('The signed-in account changed while loading videos.');
+    }
     if (_historyLoadError != null) {
       throw StateError(
         'The saved video library could not be loaded '
@@ -126,6 +177,11 @@ class VideoService extends GetxService {
 
     try {
       final result = await FilePicker.pickFiles(type: FileType.video);
+      if (generation != _historyGeneration) {
+        throw StateError(
+          'The signed-in account changed while selecting video.',
+        );
+      }
 
       if (result.isEmpty) {
         return null; // User cancelled
@@ -149,6 +205,7 @@ class VideoService extends GetxService {
         sizeBytes: fileSize,
         lastModifiedMs: lastModifiedMs,
         apiKeyProfileId: apiKeyProfileId,
+        collectionName: collectionName,
       );
       if (existing != null) {
         await setCurrentVideo(existing);
@@ -162,8 +219,10 @@ class VideoService extends GetxService {
         filePath: path,
         sizeBytes: fileSize,
         lastModifiedMs: lastModifiedMs,
+        ownerUserId: ownerUserId,
         apiKeyProfileId: apiKeyProfileId,
         status: VideoStatus.selected,
+        collectionName: collectionName ?? AppConstants.defaultCollectionName,
         streamName: buildStreamName(file.name, id),
       );
 
@@ -175,6 +234,9 @@ class VideoService extends GetxService {
   }
 
   Future<void> setCurrentVideo(VideoModel video) async {
+    if (video.ownerUserId != null && video.ownerUserId != _userId) {
+      throw StateError('This video belongs to a different signed-in user.');
+    }
     _currentVideo.value = video;
     final existingIndex = _videoHistory.indexWhere((v) => v.id == video.id);
     if (existingIndex == -1) {
@@ -183,9 +245,16 @@ class VideoService extends GetxService {
       _videoHistory[existingIndex] = video;
     }
     await _persistVideo(video);
-    await _db.collection(_settingsCollection).doc(_activeVideoDocument).set({
-      'videoId': video.id,
-    });
+    final storageUserId = video.ownerUserId ?? _storageUserId;
+    await _db
+        .collection(
+          UserDataNamespace.localCollection(
+            _settingsCollectionName,
+            storageUserId,
+          ),
+        )
+        .doc(_activeVideoDocument)
+        .set({'videoId': video.id});
   }
 
   VideoModel? findExistingLocalVideo({
@@ -193,12 +262,14 @@ class VideoService extends GetxService {
     required int sizeBytes,
     required int lastModifiedMs,
     String? apiKeyProfileId,
+    String? collectionName,
   }) {
     return _videoHistory.firstWhereOrNull(
       (video) =>
           video.filePath == filePath &&
           video.sizeBytes == sizeBytes &&
           video.apiKeyProfileId == apiKeyProfileId &&
+          (collectionName == null || video.collectionName == collectionName) &&
           (video.lastModifiedMs == null ||
               video.lastModifiedMs == lastModifiedMs),
     );
@@ -269,6 +340,11 @@ class VideoService extends GetxService {
   }
 
   Future<void> _persistVideo(VideoModel video) {
-    return _db.collection(_videoCollection).doc(video.id).set(video.toJson());
+    final storageUserId = video.ownerUserId ?? _storageUserId;
+    final collection = UserDataNamespace.localCollection(
+      _videoCollectionName,
+      storageUserId,
+    );
+    return _db.collection(collection).doc(video.id).set(video.toJson());
   }
 }

@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../shared/widgets/app_logo.dart';
 
 class SplashView extends StatefulWidget {
@@ -34,7 +36,12 @@ class _SplashViewState extends State<SplashView>
     _animationController.forward();
     _navigationTimer = Timer(const Duration(milliseconds: 2200), () {
       if (mounted && Get.currentRoute == AppRoutes.splash) {
-        Get.offNamed(AppRoutes.home);
+        final destination = Firebase.apps.isEmpty
+            ? AppRoutes.home
+            : Get.find<AuthService>().currentUser == null
+            ? AppRoutes.login
+            : AppRoutes.home;
+        Get.offNamed(destination);
       }
     });
   }

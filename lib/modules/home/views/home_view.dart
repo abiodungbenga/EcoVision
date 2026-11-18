@@ -10,8 +10,10 @@ import 'package:network_internet_checker/network_internet_checker.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/services/api_key_service.dart';
 import '../../../core/services/network_status_service.dart';
+import '../../../core/services/user_profile_service.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../shared/widgets/app_logo.dart';
 import '../../../shared/widgets/app_bottom_navigation_bar.dart';
@@ -441,6 +443,43 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+  Widget _accountAvatar(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final user = Get.find<AuthService>().currentUser;
+    if (user == null) {
+      return CircleAvatar(
+        radius: 18,
+        backgroundColor: palette.surfaceVariant,
+        child: Icon(Icons.person_outline_rounded, color: palette.secondaryText),
+      );
+    }
+
+    return FutureBuilder<File?>(
+      future: Get.find<UserProfileService>().localAvatarForUser(user.uid),
+      builder: (context, snapshot) {
+        final avatar = snapshot.data;
+        return CircleAvatar(
+          radius: 18,
+          backgroundColor: palette.surfaceVariant,
+          child: avatar == null
+              ? Icon(Icons.person_outline_rounded, color: palette.secondaryText)
+              : ClipOval(
+                  child: Image.file(
+                    avatar,
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => Icon(
+                      Icons.person_outline_rounded,
+                      color: palette.secondaryText,
+                    ),
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
@@ -462,6 +501,47 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
         actions: [
+          PopupMenuButton<String>(
+            tooltip: 'Account',
+            icon: _accountAvatar(context),
+            onSelected: (value) async {
+              if (value == 'edit_profile') {
+                await Get.toNamed(AppRoutes.editProfile);
+                if (mounted) setState(() {});
+              } else if (value == 'sign_out') {
+                controller.signOut();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Text(
+                  Get.find<AuthService>().currentUser?.email ?? 'Signed in',
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'edit_profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined),
+                    SizedBox(width: 12),
+                    Text('Edit profile'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'sign_out',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout_rounded),
+                    SizedBox(width: 12),
+                    Text('Sign out'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           PopupMenuButton<AdaptiveThemeMode>(
             tooltip: 'Appearance',
             initialValue: AdaptiveTheme.of(context).mode,
@@ -809,6 +889,7 @@ class _HomeViewState extends State<HomeView> {
     final formKey = GlobalKey<FormState>();
     var obscureApiKey = true;
     var isSaving = false;
+    var useSharedKey = controller.apiKeyService.isUsingSharedKey.value;
     var retention =
         controller.apiKeyService.retention ?? ApiKeyRetention.oneWeek;
     controller.apiKeyController.clear();
@@ -817,12 +898,25 @@ class _HomeViewState extends State<HomeView> {
       StateSetter updateDialog,
       BuildContext dialogContext,
     ) async {
-      if (isSaving || !formKey.currentState!.validate()) return;
+      if (isSaving) return;
+      final useSavedPersonalKey =
+          !useSharedKey &&
+          controller.apiKeyController.text.trim().isEmpty &&
+          controller.apiKeyService.hasSavedCredential.value;
+      if (!useSharedKey &&
+          !useSavedPersonalKey &&
+          !formKey.currentState!.validate()) {
+        return;
+      }
       updateDialog(() => isSaving = true);
-      final saved = await controller.saveApiKey(
-        controller.apiKeyController.text,
-        retention: retention,
-      );
+      final saved = useSharedKey
+          ? await controller.useSharedApiKey()
+          : useSavedPersonalKey
+          ? await controller.usePersonalApiKey()
+          : await controller.saveApiKey(
+              controller.apiKeyController.text,
+              retention: retention,
+            );
       if (!dialogContext.mounted) return;
       if (saved) {
         Navigator.of(dialogContext).pop();
@@ -840,7 +934,7 @@ class _HomeViewState extends State<HomeView> {
         builder: (confirmationContext) => AlertDialog(
           title: const Text('Revoke saved API key?'),
           content: const Text(
-            'This removes the encrypted key from this device and disconnects V-Modal. Your uploaded videos remain in your library.',
+            'This removes your personal key from this device. If the free key is available, EcoVision will keep it active. Your uploaded videos remain in your library.',
           ),
           actions: [
             TextButton(
@@ -889,120 +983,197 @@ class _HomeViewState extends State<HomeView> {
           title: const Text('Manage V-Modal API key'),
           content: SizedBox(
             width: 440,
-            child: SingleChildScrollView(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Obx(() {
-                      final service = controller.apiKeyService;
-                      final expiresAt = service.expiresAt;
-                      final currentStatus =
-                          controller.vmodalService.isConfigured
-                          ? expiresAt == null
-                                ? 'Your key is encrypted on this device and saved permanently.'
-                                : 'Your key is encrypted on this device until ${DateFormat.yMMMd().add_jm().format(expiresAt.toLocal())}.'
-                          : service.credentialExpired.value
-                          ? 'Your saved API key expired. Add it again to reconnect.'
-                          : 'Enter a runtime key to authorize indexing and search.';
-                      return Text(currentStatus);
-                    }),
-                    Obx(() {
-                      if (controller.apiKeyService.restoreError.value == null) {
-                        return const SizedBox.shrink();
-                      }
-                      return const Padding(
-                        padding: EdgeInsets.only(top: 8),
-                        child: Text(
-                          'The saved key could not be read securely. Re-enter it or revoke the saved key.',
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: controller.apiKeyController,
-                      autofocus: true,
-                      enabled: !isSaving,
-                      obscureText: obscureApiKey,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => saveKey(setState, dialogContext),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty
-                          ? 'Enter an API key to continue.'
-                          : null,
-                      decoration: InputDecoration(
-                        labelText: 'API key',
-                        hintText: 'Enter your API key',
-                        prefixIcon: const Icon(Icons.key_rounded),
-                        suffixIcon: IconButton(
-                          tooltip: obscureApiKey
-                              ? 'Show API key'
-                              : 'Hide API key',
-                          onPressed: () {
-                            setState(() => obscureApiKey = !obscureApiKey);
-                          },
-                          icon: Icon(
-                            obscureApiKey
-                                ? Icons.visibility_rounded
-                                : Icons.visibility_off_rounded,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => Get.focusScope?.unfocus(),
+              child: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Obx(() {
+                        final service = controller.apiKeyService;
+                        final expiresAt = service.expiresAt;
+                        final currentStatus = service.isUsingSharedKey.value
+                            ? 'Using the free shared API key managed by EcoVision.'
+                            : controller.vmodalService.isConfigured
+                            ? expiresAt == null
+                                  ? 'Your key is encrypted on this device and saved permanently.'
+                                  : 'Your key is encrypted on this device until ${DateFormat.yMMMd().add_jm().format(expiresAt.toLocal())}.'
+                            : service.credentialExpired.value
+                            ? 'Your saved API key expired. Add it again to reconnect.'
+                            : 'Enter a runtime key to authorize indexing and search.';
+                        return Text(currentStatus);
+                      }),
+                      Obx(() {
+                        if (controller.apiKeyService.restoreError.value ==
+                            null) {
+                          return const SizedBox.shrink();
+                        }
+                        return const Padding(
+                          padding: EdgeInsets.only(top: 8),
+                          child: Text(
+                            'The saved key could not be read securely. Re-enter it or revoke the saved key.',
                           ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    DropdownButtonFormField<ApiKeyRetention>(
-                      initialValue: retention,
-                      decoration: const InputDecoration(
-                        labelText: 'Keep this key on this device',
-                        prefixIcon: Icon(Icons.schedule_rounded),
-                      ),
-                      items: ApiKeyRetention.values
-                          .map(
-                            (option) => DropdownMenuItem(
-                              value: option,
-                              child: Text(option.label),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: isSaving
-                          ? null
-                          : (value) {
-                              if (value != null) {
-                                setState(() => retention = value);
-                              }
-                            },
-                    ),
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer
-                            .withValues(alpha: 0.55),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.info_outline_rounded, size: 18),
-                          SizedBox(width: 9),
-                          Expanded(
-                            child: Text(
-                              'Each video is tied to the API key used to upload it. If you switch keys, you may need to upload that video again under the new key.',
-                              style: TextStyle(fontSize: 12, height: 1.4),
-                            ),
+                        );
+                      }),
+                      const SizedBox(height: 12),
+                      SegmentedButton<bool>(
+                        segments: [
+                          ButtonSegment(
+                            value: true,
+                            label: const Text('Free key'),
+                            enabled: controller
+                                .apiKeyService
+                                .sharedKeyAvailable
+                                .value,
+                          ),
+                          const ButtonSegment(
+                            value: false,
+                            label: Text('My own key'),
                           ),
                         ],
+                        selected: {useSharedKey},
+                        onSelectionChanged: isSaving
+                            ? null
+                            : (selection) {
+                                setState(() => useSharedKey = selection.first);
+                              },
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        useSharedKey
+                            ? 'Managed remotely by EcoVision. This key is delivered to the app and is not secret.'
+                            : controller.apiKeyService.hasSavedCredential.value
+                            ? 'Your personal key is saved securely on this device.'
+                            : 'Enter a personal V-Modal API key below.',
+                      ),
+                      if (!controller.apiKeyService.sharedKeyAvailable.value)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  controller
+                                              .apiKeyService
+                                              .sharedKeyError
+                                              .value ==
+                                          null
+                                      ? 'The free key is not available right now.'
+                                      : 'Could not load the free key. Check your connection and try again.',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: isSaving
+                                    ? null
+                                    : () async {
+                                        setState(() => isSaving = true);
+                                        await controller.refreshSharedApiKey();
+                                        if (dialogContext.mounted) {
+                                          setState(() => isSaving = false);
+                                        }
+                                      },
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (!useSharedKey) ...[
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: controller.apiKeyController,
+                          autofocus: true,
+                          enabled: !isSaving,
+                          obscureText: obscureApiKey,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) =>
+                              saveKey(setState, dialogContext),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Enter an API key to continue.'
+                              : null,
+                          decoration: InputDecoration(
+                            labelText: 'API key',
+                            hintText: 'Enter your API key',
+                            prefixIcon: const Icon(Icons.key_rounded),
+                            suffixIcon: IconButton(
+                              tooltip: obscureApiKey
+                                  ? 'Show API key'
+                                  : 'Hide API key',
+                              onPressed: () {
+                                setState(() => obscureApiKey = !obscureApiKey);
+                              },
+                              icon: Icon(
+                                obscureApiKey
+                                    ? Icons.visibility_rounded
+                                    : Icons.visibility_off_rounded,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        DropdownButtonFormField<ApiKeyRetention>(
+                          initialValue: retention,
+                          decoration: const InputDecoration(
+                            labelText: 'Keep this key on this device',
+                            prefixIcon: Icon(Icons.schedule_rounded),
+                          ),
+                          items: ApiKeyRetention.values
+                              .map(
+                                (option) => DropdownMenuItem(
+                                  value: option,
+                                  child: Text(option.label),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: isSaving
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => retention = value);
+                                  }
+                                },
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .secondaryContainer
+                              .withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.info_outline_rounded, size: 18),
+                            SizedBox(width: 9),
+                            Expanded(
+                              child: Text(
+                                'Each video is tied to the API key used to upload it. If you switch keys, you may need to upload that video again under the new key.',
+                                style: TextStyle(fontSize: 12, height: 1.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
           actions: [
-            if (controller.apiKeyService.hasSavedCredential.value)
+            if (controller.apiKeyService.hasSavedCredential.value &&
+                !controller.apiKeyService.isUsingSharedKey.value)
               TextButton(
                 onPressed: isSaving
                     ? null
@@ -1010,7 +1181,6 @@ class _HomeViewState extends State<HomeView> {
                 child: const Text('Update duration'),
               ),
             if (controller.apiKeyService.hasSavedCredential.value ||
-                controller.vmodalService.isConfigured ||
                 controller.apiKeyService.restoreError.value != null)
               TextButton(
                 onPressed: isSaving
@@ -1040,7 +1210,14 @@ class _HomeViewState extends State<HomeView> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Save key'),
+                  : Text(
+                      useSharedKey
+                          ? 'Use free key'
+                          : controller.apiKeyService.hasSavedCredential.value &&
+                                controller.apiKeyController.text.trim().isEmpty
+                          ? 'Use saved key'
+                          : 'Save key',
+                    ),
             ),
           ],
         ),

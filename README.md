@@ -99,14 +99,48 @@ Every search hit and discovery feed item points to the exact timestamp in the so
    flutter pub get
    ```
 
-2. **Configure V-Modal**
+2. **Enable email/password sign-in**
 
-   Configure your runtime API key directly in the app settings, or pass environment flags:
-   ```bash
-   flutter run --dart-define=VMODAL_API_KEY=your_api_key --dart-define=VMODAL_PROJECT_ID=your_project_id
-   ```
+   In Firebase Console, open **Authentication → Sign-in method** and enable
+   **Email/Password**. The username entered at sign-up is saved as the user's
+   Firebase display name; users sign in with their email and password.
+   Login, account creation, and password reset are separate screens. Signed-in
+   users can edit their username and choose a profile photo; the photo stays in
+   the app's private storage on that device and is not uploaded to Firebase.
 
-3. **Android requirements**
+3. **Configure an optional free V-Modal key**
+
+   In Firebase Console, open **Remote Config**, create a string parameter named
+   `free_vmodal_api_key`, and publish the V-Modal key as its value. Update this
+   parameter in the console whenever you need to rotate the free key; users
+   receive it from the app without an app release or a custom admin dashboard.
+   The app also lets each user save and switch to their own V-Modal key.
+
+   **Security note:** Remote Config is a delivery mechanism, not a secret store.
+   A key sent to a mobile app can be extracted and used outside the app. Set
+   provider-side limits/quotas and rotate the key as needed. For a key that must
+   remain private, move V-Modal requests behind an authenticated backend.
+
+   Each signed-in user gets a V-Modal collection named `ecovision_<Firebase UID>`.
+   On-device videos, observations, bookmarks, search
+   history, and personal-key settings are scoped by the signed-in Firebase UID.
+   This is app-level separation, not a server-side access rule. Existing data
+   saved before sign-in remains in its old shared namespace and is not
+   automatically migrated.
+
+4. **Store user profiles and notification tokens**
+
+   The app writes each signed-in user's username and email to
+   `users/<Firebase UID>`, and writes the device's FCM token to a hashed
+   document under `users/<Firebase UID>/devices/`. Firestore rules restrict
+   profile and token access to that account. To activate the included rules,
+   deploy them with `npx -y firebase-tools@latest deploy --only firestore:rules`.
+
+   For broadcasts, use a trusted backend or Cloud Function with the Firebase
+   Admin SDK to send to registered tokens. Do not query or expose all users'
+   tokens from the mobile app.
+
+5. **Android requirements**
 
    Make sure `minSdkVersion` is set to 21 or higher.
 

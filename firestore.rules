@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function ownsUser(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function validUserProfile() {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+            'username',
+            'email',
+            'createdAt',
+            'updatedAt'
+          ])
+          && data.keys().hasAll([
+            'username',
+            'email',
+            'createdAt',
+            'updatedAt'
+          ])
+          && data.username is string
+          && data.username.size() > 0
+          && data.email is string
+          && data.email == request.auth.token.email
+          && data.createdAt is timestamp
+          && data.updatedAt is timestamp;
+    }
+
+    function validDeviceToken() {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['fcmToken', 'platform', 'updatedAt'])
+          && data.keys().hasAll(['fcmToken', 'platform', 'updatedAt'])
+          && data.fcmToken is string
+          && data.fcmToken.size() > 0
+          && data.fcmToken.size() <= 4096
+          && data.platform in ['android', 'ios', 'web', 'other']
+          && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get, list: if ownsUser(userId);
+      allow create: if ownsUser(userId) && validUserProfile();
+      allow update: if ownsUser(userId)
+                    && validUserProfile()
+                    && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+
+      match /devices/{deviceId} {
+        allow read: if ownsUser(userId);
+        allow create, update: if ownsUser(userId) && validDeviceToken();
+        allow delete: if ownsUser(userId);
+      }
+    }
+  }
+}

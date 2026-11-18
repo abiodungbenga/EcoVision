@@ -8,6 +8,7 @@ class VideoModel {
   final String filePath;
   final int sizeBytes;
   final int? lastModifiedMs;
+  final String? ownerUserId;
   final String? apiKeyProfileId;
   final VideoStatus status;
   final bool isUploaded;
@@ -28,6 +29,7 @@ class VideoModel {
     required this.filePath,
     required this.sizeBytes,
     this.lastModifiedMs,
+    this.ownerUserId,
     this.apiKeyProfileId,
     this.status = VideoStatus.idle,
     this.isUploaded = false,
@@ -56,6 +58,7 @@ class VideoModel {
     'filePath': filePath,
     'sizeBytes': sizeBytes,
     'lastModifiedMs': lastModifiedMs,
+    'ownerUserId': ownerUserId,
     'apiKeyProfileId': apiKeyProfileId,
     'status': status.name,
     'isUploaded': isUploaded,
@@ -79,6 +82,7 @@ class VideoModel {
       filePath: json['filePath'] as String,
       sizeBytes: json['sizeBytes'] as int,
       lastModifiedMs: json['lastModifiedMs'] as int?,
+      ownerUserId: json['ownerUserId'] as String?,
       apiKeyProfileId: json['apiKeyProfileId'] as String?,
       status: status,
       isUploaded:
@@ -101,6 +105,7 @@ class VideoModel {
     String? filePath,
     int? sizeBytes,
     int? lastModifiedMs,
+    String? ownerUserId,
     String? apiKeyProfileId,
     VideoStatus? status,
     bool? isUploaded,
@@ -116,6 +121,7 @@ class VideoModel {
       filePath: filePath ?? this.filePath,
       sizeBytes: sizeBytes ?? this.sizeBytes,
       lastModifiedMs: lastModifiedMs ?? this.lastModifiedMs,
+      ownerUserId: ownerUserId ?? this.ownerUserId,
       apiKeyProfileId: apiKeyProfileId ?? this.apiKeyProfileId,
       status: status ?? this.status,
       isUploaded: isUploaded ?? this.isUploaded,

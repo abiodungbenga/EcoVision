@@ -4,11 +4,13 @@ import 'package:get/get.dart';
 
 import '../../../core/services/video_service.dart';
 import '../../../core/services/research_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../shared/models/observation_model.dart';
 
 class DashboardController extends GetxController {
   final VideoService videoService = Get.find<VideoService>();
   final ResearchService researchService = Get.find<ResearchService>();
+  final AuthService authService = Get.find<AuthService>();
 
   final videosAnalyzed = 0.obs;
   final observationCount = 0.obs;
@@ -34,14 +36,19 @@ class DashboardController extends GetxController {
 
   void _updateGreeting() {
     final hour = DateTime.now().hour;
+    final user = authService.currentUser;
+    final displayName = user?.displayName?.trim();
+    final username = displayName != null && displayName.isNotEmpty
+        ? displayName
+        : user?.email?.split('@').first ?? 'there';
     if (hour >= 5 && hour < 12) {
-      greeting.value = 'Good morning';
+      greeting.value = 'Good morning, $username';
     } else if (hour < 17) {
-      greeting.value = 'Good afternoon';
+      greeting.value = 'Good afternoon, $username';
     } else if (hour < 21) {
-      greeting.value = 'Good evening';
+      greeting.value = 'Good evening, $username';
     } else {
-      greeting.value = 'Good night';
+      greeting.value = 'Good night, $username';
     }
   }
 

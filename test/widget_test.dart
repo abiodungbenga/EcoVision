@@ -11,9 +11,11 @@ import 'package:network_internet_checker/network_internet_checker.dart';
 import 'package:wild_sense/app/app.dart';
 import 'package:wild_sense/app/theme/app_theme.dart';
 import 'package:wild_sense/core/services/api_key_service.dart';
+import 'package:wild_sense/core/services/shared_api_key_provider.dart';
 import 'package:wild_sense/core/services/video_service.dart';
 import 'package:wild_sense/core/services/vmodal_service.dart';
 import 'package:wild_sense/core/utils/duration_utils.dart';
+import 'package:wild_sense/core/utils/user_data_namespace.dart';
 import 'package:wild_sense/shared/models/search_result_model.dart';
 import 'package:wild_sense/shared/models/observation_model.dart';
 import 'package:wild_sense/shared/models/video_model.dart';
@@ -489,6 +491,80 @@ void main() {
     );
   });
 
+  test('shared and personal API keys can be switched independently', () async {
+    final store = _MemorySecureValueStore();
+    final provider = _FakeSharedApiKeyProvider('free-key');
+    final vmodal = _FakeVModalService();
+    final service = ApiKeyService(
+      vmodalService: vmodal,
+      storage: store,
+      sharedApiKeyProvider: provider,
+    );
+
+    await service.initialize();
+    expect(service.isUsingSharedKey.value, isTrue);
+    expect(vmodal.configuredKey, 'free-key');
+
+    await service.save('personal-key', ApiKeyRetention.permanent);
+    expect(service.isUsingSharedKey.value, isFalse);
+    expect(vmodal.configuredKey, 'personal-key');
+    await service.useSharedKey();
+    expect(service.isUsingSharedKey.value, isTrue);
+    expect(service.hasSavedCredential.value, isTrue);
+    expect(vmodal.configuredKey, 'free-key');
+
+    provider.apiKey = 'rotated-key';
+    await service.useSharedKey();
+    expect(vmodal.configuredKey, 'rotated-key');
+
+    service.onClose();
+    final restoredVModal = _FakeVModalService();
+    final restoredService = ApiKeyService(
+      vmodalService: restoredVModal,
+      storage: store,
+      sharedApiKeyProvider: provider,
+    );
+    await restoredService.initialize();
+    expect(restoredService.isUsingSharedKey.value, isTrue);
+    expect(restoredVModal.configuredKey, 'rotated-key');
+
+    await restoredService.usePersonalKey();
+    expect(restoredService.isUsingSharedKey.value, isFalse);
+    expect(restoredVModal.configuredKey, 'personal-key');
+    restoredService.onClose();
+  });
+
+  test(
+    'saved personal API keys use separate Firebase user namespaces',
+    () async {
+      final store = _MemorySecureValueStore();
+      final vmodal = _FakeVModalService();
+      final service = ApiKeyService(
+        vmodalService: vmodal,
+        storage: store,
+        userId: 'user-a',
+      );
+
+      await service.initialize();
+      await service.save('user-a-key', ApiKeyRetention.permanent);
+      await service.switchUser('user-b');
+      expect(service.hasSavedCredential.value, isFalse);
+      expect(vmodal.configuredKey, isNull);
+      await service.save('user-b-key', ApiKeyRetention.permanent);
+
+      await service.switchUser('user-a');
+      expect(vmodal.configuredKey, 'user-a-key');
+      expect(service.hasSavedCredential.value, isTrue);
+      expect(
+        UserDataNamespace.localCollection('uploaded_videos', 'user-a'),
+        isNot(UserDataNamespace.localCollection('uploaded_videos', 'user-b')),
+      );
+      final collectionService = VModalService()..setUserId('uid123');
+      expect(collectionService.currentCollectionName, 'ecovision_uid123');
+      service.onClose();
+    },
+  );
+
   testWidgets('video card actions wrap at narrow widths', (tester) async {
     final video = VideoModel(
       id: '123',
@@ -579,6 +655,12 @@ class _FakeVModalService extends VModalService {
   String? configuredKey;
 
   @override
+  bool get isConfigured => configuredKey != null;
+
+  @override
+  String get apiKey => configuredKey ?? '';
+
+  @override
   Future<bool> configure(String apiKey, {String? projectId}) async {
     configuredKey = apiKey;
     return true;
@@ -588,6 +670,15 @@ class _FakeVModalService extends VModalService {
   Future<void> clearConfiguration() async {
     configuredKey = null;
   }
+}
+
+class _FakeSharedApiKeyProvider implements SharedApiKeyProvider {
+  _FakeSharedApiKeyProvider(this.apiKey);
+
+  String? apiKey;
+
+  @override
+  Future<String?> fetchApiKey() async => apiKey;
 }
 
 class _FakeInternetChecker extends InternetChecker {

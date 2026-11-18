@@ -13,6 +13,8 @@ import '../../modules/saved_sightings/views/saved_sightings_view.dart';
 import '../../modules/dashboard/bindings/dashboard_binding.dart';
 import '../../modules/dashboard/views/dashboard_view.dart';
 import '../../modules/splash/views/splash_view.dart';
+import '../../modules/auth/views/auth_view.dart';
+import '../../modules/profile/views/edit_profile_view.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -20,6 +22,16 @@ class AppPages {
 
   static final routes = [
     GetPage(name: AppRoutes.splash, page: () => const SplashView()),
+    GetPage(name: AppRoutes.login, page: () => const AuthView()),
+    GetPage(
+      name: AppRoutes.createAccount,
+      page: () => const CreateAccountView(),
+    ),
+    GetPage(
+      name: AppRoutes.forgotPassword,
+      page: () => const ForgotPasswordView(),
+    ),
+    GetPage(name: AppRoutes.editProfile, page: () => const EditProfileView()),
     GetPage(
       name: AppRoutes.home,
       page: () => const HomeView(),
